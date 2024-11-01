@@ -181,6 +181,7 @@ const EmployeeCalendarPage = () => {
           onSelectSlot={handleSelectSlot}
           onSelectEvent={handleSelectEvent}
           views={[Views.WORK_WEEK, Views.DAY]}
+          onView={handleOnChangeView}
           view={view}
         />
       </div>

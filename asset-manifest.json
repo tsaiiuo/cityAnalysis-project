@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/cityAnalysis-project/static/css/main.99044e39.css",
+    "main.js": "/cityAnalysis-project/static/js/main.dd8b9e57.js",
+    "static/js/453.a074a449.chunk.js": "/cityAnalysis-project/static/js/453.a074a449.chunk.js",
+    "index.html": "/cityAnalysis-project/index.html",
+    "main.99044e39.css.map": "/cityAnalysis-project/static/css/main.99044e39.css.map",
+    "main.dd8b9e57.js.map": "/cityAnalysis-project/static/js/main.dd8b9e57.js.map",
+    "453.a074a449.chunk.js.map": "/cityAnalysis-project/static/js/453.a074a449.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.99044e39.css",
+    "static/js/main.dd8b9e57.js"
+  ]
+}

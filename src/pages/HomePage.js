@@ -71,9 +71,10 @@ const HomePage = () => {
     try {
       // 模擬 API 延遲
 
-      const taskData = await createTask(inputs);
-      //getTime
-      const timeData = await timePredict(inputs);
+      const [taskData, timeData] = await Promise.all([
+        createTask(inputs),
+        timePredict(inputs),
+      ]);
       //
       console.log(timeData);
       const assignScheduleData = await postAssignSchedule(

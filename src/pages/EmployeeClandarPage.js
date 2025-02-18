@@ -16,6 +16,7 @@ import {
   getSchedule,
   createSchedule,
 } from "../api/scheduleApi";
+import { getEmployee } from "../api/employeeApi";
 import { getTasks } from "../api/tasksApi";
 
 const localizer = momentLocalizer(moment);
@@ -89,6 +90,7 @@ const EmployeeCalendarPage = () => {
   const [selectedTask, setSelectedTask] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [tasks, setTasks] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedName, setSelectedName] = useState("");
@@ -100,9 +102,12 @@ const EmployeeCalendarPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const tasks = await getTasks();
-        const schedule = await getSchedule();
-        console.log(schedule);
+        const [tasks, schedule, employee] = await Promise.all([
+          getTasks(),
+          getSchedule(),
+          getEmployee(),
+        ]);
+        console.log(employee);
         var temp = [];
         for (var i = 0; i < schedule.length; i++) {
           var re = splitDateRange(schedule[i]);
@@ -111,7 +116,7 @@ const EmployeeCalendarPage = () => {
           }
         }
 
-        console.log(temp);
+        // console.log(temp);
         const convertedData = temp.map((item) => ({
           ...item, // 保留原始屬性
           start: new Date(item.start), // 將 start 轉為 Date
@@ -121,9 +126,9 @@ const EmployeeCalendarPage = () => {
         var filtered = convertedData
           .filter((event) => event.name === schedule[0].name)
           .sort((a, b) => a.start - b.start);
-        console.log(filtered);
+        // console.log(filtered);
         setFilteredEvents(filtered);
-
+        setEmployees(employee);
         setSelectedName(convertedData[0].name);
         setTasks(tasks); // 更新資料狀態
         setSelectedTask(tasks[0].task_id);
@@ -330,9 +335,9 @@ const EmployeeCalendarPage = () => {
                 onChange={handleNameChange}
                 className="border p-1 text-[12px]"
               >
-                {[...new Set(events.map((event) => event.name))].map((name) => (
-                  <option key={name} value={name}>
-                    {name}
+                {employees.map((employee) => (
+                  <option key={employee.name} value={employee.name}>
+                    {employee.name}
                   </option>
                 ))}
               </select>

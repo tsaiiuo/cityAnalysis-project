@@ -9,9 +9,10 @@ import axios from "axios";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import EventComponent from "../components/EventComponent";
+import LitleComponent from "../components/LittleComponent";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import "../Overall.css";
+import "../Little.css";
 import { deleteSchedule, getSchedule } from "../api/scheduleApi";
 
 const localizer = momentLocalizer(moment);
@@ -85,8 +86,8 @@ const splitDateRange = (item) => {
 const OverallCalendarPage = () => {
   const [events, setEvents] = useState([]);
   const [value, onChange] = useState(new Date());
-  const [view, setView] = useState(Views.DAY);
-  const [isCalendarVisible, setIsCalendarVisible] = useState(true);
+  const [view, setView] = useState(Views.WORK_WEEK);
+  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // 新增：控制 dialog 顯示與記錄被選取的事件
@@ -247,10 +248,11 @@ const OverallCalendarPage = () => {
             min={new Date(2025, 1, 0, 8, 0, 0)}
             max={new Date(2025, 1, 0, 17, 0, 0)}
             selectable
-            views={[Views.DAY]}
+            views={[Views.WORK_WEEK, Views.DAY]}
+            onView={handleOnChangeView}
             view={view}
             components={{
-              event: EventComponent,
+              event: LitleComponent,
             }}
             onSelectEvent={handleEventDialogOpen} // 改為開啟 dialog
             onNavigate={handleNavigate}

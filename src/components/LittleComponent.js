@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const EventComponent = ({ event }) => {
+const LitleComponent = ({ event }) => {
   const formatDateToTaiwanTime = (isoString) => {
     const date = new Date(isoString);
     return date.toLocaleString("zh-TW", { timeZone: "Asia/Taipei" });
@@ -23,4 +23,4 @@ const EventComponent = ({ event }) => {
   );
 };
 
-export default EventComponent;
+export default LitleComponent;

@@ -8,6 +8,9 @@ import {
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import Calendar from "react-calendar";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
 import "react-calendar/dist/Calendar.css";
 import "../Employee.css";
 import EventComponent from "../components/EventComponent";
@@ -94,7 +97,7 @@ const EmployeeCalendarPage = () => {
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedName, setSelectedName] = useState("");
-
+  const [taskEndDate, setTaskEndDate] = useState("");
   // 新增：用來控制 dialog 的顯示與記錄被選取的事件
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
@@ -139,7 +142,10 @@ const EmployeeCalendarPage = () => {
 
     fetchData(); // 呼叫 API
   }, []);
-
+  const handleDateChange = (date) => {
+    setTaskEndDate(date);
+    console.log(taskEndDate);
+  };
   const handleNavigate = (date) => {
     setCurrentDate(date); // 更新当前选中的日期
     console.log("Current selected date:", date);
@@ -150,21 +156,19 @@ const EmployeeCalendarPage = () => {
   };
 
   const handleSelectSlot = async ({ start, end }) => {
-    const title = window.prompt(
-      `是否要規劃以下時間？\n\n員工: ${selectedName}\n開始: ${start}\n結束: ${end}\n\n請輸入 "是" 或 "否"。`
+    const isConfirmed = window.confirm(
+      `規劃以下時間：\n\n員工: ${selectedName}\n開始: ${start}\n結束: ${end}\n\n按「確定」送出需求，按「取消」關閉`
     );
 
-    if (title === "是") {
+    if (isConfirmed) {
       console.log(`已規劃時間: 員工 ${selectedName} (${start} - ${end})`);
-      // 這裡可以加入進一步的處理邏輯，例如發送 API 請求
+      // 送出需求（例如發送 API 請求）
       await createSchedule(start, end, selectedTask, selectedName);
       const schedule = await getSchedule();
-      var temp = [];
-      for (var i = 0; i < schedule.length; i++) {
-        var re = splitDateRange(schedule[i]);
-        for (var j = 0; j < re.length; j++) {
-          temp.push(re[j]);
-        }
+      let temp = [];
+      for (let i = 0; i < schedule.length; i++) {
+        const re = splitDateRange(schedule[i]);
+        temp.push(...re);
       }
 
       console.log(temp);
@@ -174,15 +178,13 @@ const EmployeeCalendarPage = () => {
         end: new Date(item.end),
       }));
       setEvents(convertedData);
-      var filtered = convertedData
+      const filtered = convertedData
         .filter((event) => event.name === selectedName)
         .sort((a, b) => a.start - b.start);
       console.log(filtered);
       setFilteredEvents(filtered);
-    } else if (title === "否") {
-      console.log(`已跳過時間規劃: 員工 ${selectedName}`);
     } else {
-      console.log("輸入無效，請輸入 '是' 或 '否'");
+      console.log(`已取消規劃時間: 員工 ${selectedName}`);
     }
   };
 
@@ -243,9 +245,12 @@ const EmployeeCalendarPage = () => {
     handleCloseDialog();
   };
 
-  // 完結事件的處理：呼叫後端 API 將 task 的 is_scheduled 設成 0
   const handleCompleteEvent = async () => {
     if (!selectedEvent) return;
+    if (taskEndDate === "") {
+      alert("請選擇完成時間");
+      return;
+    }
     console.log("Complete event: ", selectedEvent);
     try {
       const response = await fetch(
@@ -255,6 +260,10 @@ const EmployeeCalendarPage = () => {
           headers: {
             "Content-Type": "application/json",
           },
+          // 將 taskEndDate 當作 current_time 傳遞給後端
+          body: JSON.stringify({
+            current_time: taskEndDate,
+          }),
         }
       );
       if (!response.ok) {
@@ -396,19 +405,31 @@ ${formatDateToTaiwanTime(selectedEvent.check_time)}`}
             <p className="mb-4">
               請選擇要對任務編號 {selectedEvent.task_id} 進行的操作
             </p>
-            <div className="flex justify-end space-x-2">
+            <div className="flex justify-start space-x-2">
               <button
                 onClick={handleDeleteEvent}
                 className="bg-red-500 text-white px-3 py-2 rounded-md"
               >
-                刪除此次排班編號：{selectedEvent.schedule_id}
+                刪除此次排班
               </button>
+            </div>
+            <div className="flex justify-start space-x-2 mt-1">
               <button
                 onClick={handleCompleteEvent}
                 className="bg-green-500 text-white px-3 py-2 rounded-md"
               >
-                完結整項任務
+                完結任務時間
               </button>
+              <div>
+                <DatePicker
+                  selected={taskEndDate}
+                  onChange={handleDateChange}
+                  showTimeSelect
+                  dateFormat="Pp"
+                  className="border p-2 w-full"
+                  placeholderText="選擇複丈時間"
+                />
+              </div>
             </div>
             <button
               onClick={handleCloseDialog}

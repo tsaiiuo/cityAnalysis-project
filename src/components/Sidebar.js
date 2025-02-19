@@ -49,6 +49,14 @@ const Sidebar = () => {
             </li>
             <li>
               <a
+                href="Employee"
+                className="block p-4 text-lg hover:bg-black hover:text-white hover:rounded-md"
+              >
+                員工上班狀態
+              </a>
+            </li>
+            <li>
+              <a
                 href="EmployeeClandar"
                 className="block p-4 text-lg hover:bg-black hover:text-white hover:rounded-md"
               >

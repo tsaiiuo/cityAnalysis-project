@@ -4,6 +4,7 @@ import HomePage from "./pages/HomePage";
 import EmployeeClandarPage from "./pages/EmployeeClandarPage";
 import OverallClandarPage from "./pages/OverallClandarPage";
 import FirmAnalysisPage from "./pages/FirmAnalysisPage";
+import EmployeePage from "./pages/EmployeePage";
 import "./index.css";
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/EmployeeClandar" element={<EmployeeClandarPage />} />
         <Route path="/OverrallClandar" element={<OverallClandarPage />} />
         <Route path="/FirmAnalysis" element={<FirmAnalysisPage />} />
+        <Route path="/Employee" element={<EmployeePage />} />
       </Routes>
     </BrowserRouter>
   );

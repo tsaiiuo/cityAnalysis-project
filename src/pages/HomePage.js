@@ -389,7 +389,7 @@ const HomePage = () => {
                     );
                     console.log(`選擇 ${item.assigned_employee}`);
                     setIsDialogOpen(false);
-                    window.location.href = `/EmployeeCalandar?name=${encodeURIComponent(
+                    window.location.href = `/EmployeeClandar?name=${encodeURIComponent(
                       item.assigned_employee
                     )}`;
                   }}
@@ -432,7 +432,7 @@ const HomePage = () => {
                   </select>
                   <button
                     onClick={() => {
-                      window.location.href = `/EmployeeCalandar?name=${encodeURIComponent(
+                      window.location.href = `/EmployeeClandar?name=${encodeURIComponent(
                         selectedEmployeeFlex
                       )}`;
                     }}

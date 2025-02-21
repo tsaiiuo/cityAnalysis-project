@@ -217,7 +217,7 @@ const DashboardPage = () => {
       {/* 左側選單 */}
       <Sidebar />
       {/* 右側主要內容區 */}
-      <div className="w-full p-6">
+      <div className="w-2/3  overflow-y-auto">
         <h2 className="text-2xl font-bold mb-6">儀表板</h2>
 
         {/* 員工工時圖表區塊 */}
@@ -267,7 +267,7 @@ const DashboardPage = () => {
               ))}
             </select>
           </div>
-          <Line data={monthlyLandSectionDistribution} />
+          <Bar data={monthlyLandSectionDistribution} />
         </div>
       </div>
     </div>

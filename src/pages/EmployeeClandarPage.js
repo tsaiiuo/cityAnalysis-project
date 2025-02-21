@@ -93,7 +93,7 @@ const EmployeeCalendarPage = () => {
   const [selectedTask, setSelectedTask] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [tasks, setTasks] = useState([]);
-  const [employees, setEmployees] = useState([]);
+
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedName, setSelectedName] = useState("");
@@ -101,6 +101,9 @@ const EmployeeCalendarPage = () => {
   // 新增：用來控制 dialog 的顯示與記錄被選取的事件
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
+  const [employeeColors, setEmployeeColors] = useState({});
+  const [employees, setEmployees] = useState([]);
+  const [activeStartDate, setActiveStartDate] = useState(new Date());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,28 +114,65 @@ const EmployeeCalendarPage = () => {
           getEmployee(),
         ]);
         console.log(employee);
-        var temp = [];
-        for (var i = 0; i < schedule.length; i++) {
-          var re = splitDateRange(schedule[i]);
-          for (var j = 0; j < re.length; j++) {
+        let temp = [];
+        for (let i = 0; i < schedule.length; i++) {
+          const re = splitDateRange(schedule[i]);
+          for (let j = 0; j < re.length; j++) {
             temp.push(re[j]);
           }
         }
 
-        // console.log(temp);
         const convertedData = temp.map((item) => ({
           ...item, // 保留原始屬性
           start: new Date(item.start), // 將 start 轉為 Date
           end: new Date(item.end), // 將 end 轉為 Date
         }));
         setEvents(convertedData);
-        var filtered = convertedData
-          .filter((event) => event.name === schedule[0].name)
-          .sort((a, b) => a.start - b.start);
-        // console.log(filtered);
-        setFilteredEvents(filtered);
+
+        // 取得 URL 參數中的 name
+        const params = new URLSearchParams(window.location.search);
+        const queryName = params.get("name");
+
+        let filtered;
+        if (queryName) {
+          // 若有參數則以參數作為過濾條件及預設選擇
+          filtered = convertedData
+            .filter((event) => event.name === queryName)
+            .sort((a, b) => a.start - b.start);
+          setFilteredEvents(filtered);
+          setSelectedName(queryName);
+        } else {
+          // 若無則保持原先邏輯
+          filtered = convertedData
+            .filter((event) => event.name === schedule[0].name)
+            .sort((a, b) => a.start - b.start);
+          setFilteredEvents(filtered);
+          setSelectedName(convertedData[0].name);
+        }
+
+        const palette = [
+          "#e2f8ff",
+          "#fefce8",
+          "#f2f1ff",
+          "#fdf2fb",
+          "#fde2e2",
+          "#e2fde2",
+          "#e2e2fd",
+          "#fde2fd",
+          "#d2e2fd",
+          "#fce2d2",
+        ];
+
+        // 建立 mapping：依照回傳順序為前 10 個員工指定顏色
+        const mapping = {};
+        employee.forEach((e, index) => {
+          if (index < palette.length) {
+            mapping[e.name] = palette[index];
+          }
+        });
+        console.log(filtered);
+        setEmployeeColors(mapping);
         setEmployees(employee);
-        setSelectedName(convertedData[0].name);
         setTasks(tasks); // 更新資料狀態
         setSelectedTask(tasks[0].task_id);
       } catch (err) {
@@ -146,9 +186,33 @@ const EmployeeCalendarPage = () => {
     setTaskEndDate(date);
     console.log(taskEndDate);
   };
-  const handleNavigate = (date) => {
-    setCurrentDate(date); // 更新当前选中的日期
-    console.log("Current selected date:", date);
+  // Helper：根據當前選取日期的「日」數，計算在目標月份中的日期
+  const getSameDayInMonth = (date, targetMonthDate) => {
+    const day = date.getDate();
+    const year = targetMonthDate.getFullYear();
+    const month = targetMonthDate.getMonth();
+    // 計算目標月份總天數
+    const daysInTargetMonth = new Date(year, month + 1, 0).getDate();
+    // 若當前日期超過目標月份最大天數，則使用目標月份最後一天
+    const newDay = day > daysInTargetMonth ? daysInTargetMonth : day;
+    return new Date(year, month, newDay);
+  };
+  const handleActiveStartDateChange = ({
+    activeStartDate: newActiveStartDate,
+    view,
+  }) => {
+    // 僅處理月視圖
+    if (view === "month") {
+      // 若原先的 activeStartDate 不存在或月份發生改變，則更新 currentDate
+      if (
+        !activeStartDate ||
+        activeStartDate.getMonth() !== newActiveStartDate.getMonth()
+      ) {
+        const newDate = getSameDayInMonth(currentDate, newActiveStartDate);
+        setCurrentDate(newDate);
+      }
+      setActiveStartDate(newActiveStartDate);
+    }
   };
 
   const handleOnChangeView = (selectedView) => {
@@ -300,6 +364,23 @@ const EmployeeCalendarPage = () => {
     }
     handleCloseDialog();
   };
+  // BigCalendar 的 eventPropGetter 利用 mapping 指定顏色
+  const eventPropGetter = (event, start, end, isSelected) => {
+    // 根據 event.name 取得對應的顏色，若 mapping 中沒有則使用預設顏色
+    var backgroundColor = "";
+    if (event.is_scheduled === 1) {
+      backgroundColor = "#ff4d4d";
+    } else {
+      backgroundColor = employeeColors[event.name] || "#d1d5db";
+    }
+    return {
+      style: {
+        backgroundColor,
+        border: "none", // 移除預設邊框
+        color: "#333",
+      },
+    };
+  };
 
   return (
     <div className="flex flex-row h-screen">
@@ -314,7 +395,7 @@ const EmployeeCalendarPage = () => {
                 htmlFor="nameFilter"
                 className="mr-2 font-semibold text-base p-2"
               >
-                選擇案件編號:
+                選擇已預測地號:
               </label>
               <select
                 id="nameFilter"
@@ -322,13 +403,15 @@ const EmployeeCalendarPage = () => {
                 onChange={handleSelectTaskChange}
                 className="border p-1 text-[12px]"
               >
-                {[...new Set(tasks.map((task) => task.task_id))].map(
-                  (task_id) => (
-                    <option key={task_id} value={task_id}>
-                      {task_id}
-                    </option>
-                  )
-                )}
+                {[
+                  ...new Map(
+                    tasks.map((task) => [task.task_id, task])
+                  ).values(),
+                ].map((task) => (
+                  <option key={task.task_id} value={task.task_id}>
+                    地段:{task.land_section}地號:{task.local_point}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="">
@@ -366,10 +449,11 @@ const EmployeeCalendarPage = () => {
             views={[Views.WORK_WEEK, Views.DAY]}
             onView={handleOnChangeView}
             view={view}
+            eventPropGetter={eventPropGetter}
             components={{
               event: EventComponent,
             }}
-            onNavigate={handleNavigate}
+            onNavigate={handleActiveStartDateChange}
             date={currentDate}
           />
         </div>
@@ -378,10 +462,9 @@ const EmployeeCalendarPage = () => {
       <div className="w-1/3">
         <div className="flex-1 bg-white p-6 rounded-md max-w-4xl mx-auto mt-10">
           <Calendar
-            onChange={(newDate) => {
-              setCurrentDate(newDate);
-            }}
+            onChange={(newDate) => setCurrentDate(newDate)}
             value={currentDate}
+            onActiveStartDateChange={handleActiveStartDateChange}
             className="mb-8"
           />
         </div>
@@ -427,7 +510,7 @@ ${formatDateToTaiwanTime(selectedEvent.check_time)}`}
                   showTimeSelect
                   dateFormat="Pp"
                   className="border p-2 w-full"
-                  placeholderText="選擇複丈時間"
+                  placeholderText="選擇完成任務時間"
                 />
               </div>
             </div>

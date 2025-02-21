@@ -1,5 +1,7 @@
 import React from "react";
 import { BrowserRouter, Route, Routes, Link } from "react-router-dom";
+import { Helmet } from "react-helmet";
+
 import HomePage from "./pages/HomePage";
 import EmployeeClandarPage from "./pages/EmployeeClandarPage";
 import OverallClandarPage from "./pages/OverallClandarPage";
@@ -9,6 +11,9 @@ import "./index.css";
 function App() {
   return (
     <BrowserRouter>
+      <Helmet>
+        <title>鑑界排班系統</title>
+      </Helmet>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/EmployeeClandar" element={<EmployeeClandarPage />} />

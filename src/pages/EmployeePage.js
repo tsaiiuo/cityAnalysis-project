@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
-import { updateEmployeeWork, getEmployee } from "../api/employeeApi"; // 已建立的 API 呼叫函式
+import {
+  updateEmployeeWork,
+  getEmployee,
+  addEmployee,
+} from "../api/employeeApi"; // 假設 API 呼叫函式已建立
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const EmployeePage = () => {
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 新增員工的 state
+  const [newEmployee, setNewEmployee] = useState({
+    name: "",
+    work: 1,
+    work_hours: 0,
+  });
 
   // 取得所有員工資料
   const fetchEmployees = async () => {
@@ -41,21 +54,72 @@ const EmployeePage = () => {
             : emp
         )
       );
+      toast.success("員工狀態更新成功");
     } catch (error) {
       console.error("Error updating employee work:", error);
+      toast.error("員工狀態更新失敗");
+    }
+  };
+
+  // 新增員工功能（假設有 addEmployee API）
+  const handleAddEmployee = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await addEmployee(newEmployee);
+      setEmployees([...employees, response]);
+      setNewEmployee({ name: "", work: 0, work_hours: 0 });
+      toast.success("新增員工成功");
+    } catch (error) {
+      console.error("Error adding employee:", error);
+      toast.error("新增員工失敗");
     }
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-white">
+    <div className="flex flex-col lg:flex-row h-screen bg-gray-50">
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content */}
-      <div className="flex-1 p-8">
+      <div className="w-2/3 p-10 overflow-y-auto">
         <h2 className="text-2xl font-semibold mb-6 text-gray-800">
           員工工作狀態管理
         </h2>
+
+        {/* 新增員工區域 */}
+        <div className="bg-white shadow rounded-lg p-6 mb-8">
+          <h3 className="text-xl font-bold mb-4 text-gray-800">新增員工</h3>
+          <form onSubmit={handleAddEmployee}>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  姓名
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={newEmployee.name}
+                  onChange={(e) =>
+                    setNewEmployee({ ...newEmployee, name: e.target.value })
+                  }
+                  className="mt-1 p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="請輸入員工姓名"
+                />
+              </div>
+              {/* 可依需求增加其他欄位，例如初始工時 */}
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-md shadow transition-colors duration-150"
+                >
+                  新增員工
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* 員工資料表 */}
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="text-xl text-gray-600">載入中...</div>
@@ -131,6 +195,7 @@ const EmployeePage = () => {
           </div>
         )}
       </div>
+      <ToastContainer position="bottom-right" />
     </div>
   );
 };

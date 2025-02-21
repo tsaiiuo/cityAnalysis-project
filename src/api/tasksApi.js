@@ -18,9 +18,9 @@ export const getTasks = async () => {
   }
 };
 
-// 新增 schedule 的 API
-export const createTask = async (inputs) => {
+export const timePredict = async (inputs) => {
   try {
+    // 驗證 inputs
     for (const [key, value] of Object.entries(inputs)) {
       if (
         value === null ||
@@ -32,8 +32,46 @@ export const createTask = async (inputs) => {
         );
       }
     }
-    var cadastral_arrangement = false;
-    if (inputs.cadastralArrangement === "是") cadastral_arrangement = true;
+    const cadastral_arrangement = inputs.cadastralArrangement === "是";
+    const taskData = {
+      office: inputs.office,
+      adm_num: Number(inputs.landSection),
+      land_num: inputs.localPoints[0],
+      points: Number(inputs.stakePoints),
+      area: Number(inputs.workArea),
+      category: inputs.diagramOrNumeric,
+      method: cadastral_arrangement,
+    };
+
+    console.log(taskData);
+    const response = await axios.post(`${BASE_URL}/time_predict`, taskData);
+    console.log("Time predict result:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error in timePredict:",
+      error.response ? error.response.data : error.message
+    );
+    // 重新拋出錯誤，讓外層可以捕捉到
+    throw error;
+  }
+};
+
+export const createTask = async (inputs) => {
+  try {
+    // 驗證 inputs
+    for (const [key, value] of Object.entries(inputs)) {
+      if (
+        value === null ||
+        value === "" ||
+        (typeof value === "string" && value.trim().length === 0)
+      ) {
+        throw new Error(
+          `Invalid value for ${key}. Value cannot be null or empty.`
+        );
+      }
+    }
+    const cadastral_arrangement = inputs.cadastralArrangement === "是";
     const taskData = {
       office_name: inputs.office,
       land_section: Number(inputs.landSection),
@@ -54,44 +92,8 @@ export const createTask = async (inputs) => {
       "Error creating task:",
       error.response ? error.response.data : error.message
     );
-  }
-};
-
-// 新增 timePredict 的 API
-export const timePredict = async (inputs) => {
-  try {
-    for (const [key, value] of Object.entries(inputs)) {
-      if (
-        value === null ||
-        value === "" ||
-        (typeof value === "string" && value.trim().length === 0)
-      ) {
-        throw new Error(
-          `Invalid value for ${key}. Value cannot be null or empty.`
-        );
-      }
-    }
-    var cadastral_arrangement = false;
-    if (inputs.cadastralArrangement === "是") cadastral_arrangement = true;
-    const taskData = {
-      office: inputs.office,
-      adm_num: Number(inputs.landSection),
-      land_num: inputs.localPoints[0],
-      points: Number(inputs.stakePoints),
-      area: Number(inputs.workArea),
-      category: inputs.diagramOrNumeric,
-      method: cadastral_arrangement,
-    };
-
-    console.log(taskData);
-    const response = await axios.post(`${BASE_URL}/time_predict`, taskData);
-    console.log("Task created:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error(
-      "Error creating task:",
-      error.response ? error.response.data : error.message
-    );
+    // 重新拋出錯誤，讓外層可以捕捉到
+    throw error;
   }
 };
 

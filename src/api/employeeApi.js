@@ -1,6 +1,34 @@
 import axios from "axios";
 
 const BASE_URL = "http://127.0.0.1:5000"; // 定義基礎 URL
+
+export const addEmployee = async (employeeData) => {
+  try {
+    // 驗證必填欄位 name 是否存在
+    if (!employeeData.name) {
+      throw new Error("Invalid input: name is required.");
+    }
+
+    // 設定預設值：若未傳入 work 或 work_hours 則預設為 1 與 0
+    const payload = {
+      name: employeeData.name,
+      work: employeeData.work !== undefined ? employeeData.work : 1,
+      work_hours:
+        employeeData.work_hours !== undefined ? employeeData.work_hours : 0,
+    };
+
+    console.log("Adding employee with data:", payload);
+    const response = await axios.post(`${BASE_URL}/employees`, payload);
+    console.log("Employee added successfully:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error adding employee:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
 export const updateEmployeeWork = async (inputs) => {
   try {
     // 驗證必填欄位是否存在

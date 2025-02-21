@@ -374,7 +374,9 @@ const HomePage = () => {
               name="landSection"
               value={landSectionQuery}
               onChange={(e) => {
-                setLandSectionQuery(e.target.value);
+                const newValue = e.target.value;
+                setLandSectionQuery(newValue);
+                setInputs((prev) => ({ ...prev, landSection: newValue }));
                 setShowSuggestions(true);
               }}
               onFocus={() => setShowSuggestions(true)}
@@ -382,7 +384,7 @@ const HomePage = () => {
               placeholder="輸入地段名稱或數值"
             />
             {showSuggestions && filteredSuggestions.length > 0 && (
-              <ul className="absolute z-10 left-0 right-0 bg-white border rounded-md mt-1">
+              <ul className="absolute z-10 left-0 right-0 bg-white border rounded-md mt-1 h-screen overflow-y-auto">
                 {filteredSuggestions.map((option, index) => (
                   <li
                     key={index}

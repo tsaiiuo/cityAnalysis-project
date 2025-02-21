@@ -9,7 +9,7 @@ const Sidebar = () => {
   return (
     <div
       className={`${
-        isCollapsed ? "w-1/10" : "w-full lg:w-1/5"
+        isCollapsed ? "w-1/10" : "w-full lg:w-1/5 h-screen"
       } transition-all duration-300  text-black pt-2 pl-6 pr-6 bg-slate-100 `}
     >
       {isCollapsed && (

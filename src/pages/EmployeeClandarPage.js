@@ -173,8 +173,16 @@ const EmployeeCalendarPage = () => {
         console.log(filtered);
         setEmployeeColors(mapping);
         setEmployees(employee);
-        setTasks(tasks); // 更新資料狀態
-        setSelectedTask(tasks[0].task_id);
+        setTasks(tasks); // 更新 tasks 狀態
+
+        // 取得 URL 參數中的 taskID，若有則以該 taskID 作為預設選擇，否則使用 tasks[0].task_id
+        const taskIDParam = params.get("taskID");
+        if (taskIDParam) {
+          setSelectedTask(taskIDParam);
+        } else if (tasks && tasks.length > 0) {
+          setSelectedTask(tasks[0].task_id);
+        }
+        console.log("Selected Task:", taskIDParam || tasks[0].task_id);
       } catch (err) {
         console.log(err);
       }

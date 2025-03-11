@@ -19,6 +19,14 @@ import {
   getSchedule,
   createSchedule,
 } from "../api/scheduleApi";
+import { updateTask } from "../api/tasksApi";
+import {
+  addLeaveRecord,
+  deleteLeaveRecord,
+  getLeaveRecords,
+} from "../api/leaveApi"; // 請假 API
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { getEmployee } from "../api/employeeApi";
 import { getTasks } from "../api/tasksApi";
 
@@ -104,19 +112,95 @@ const EmployeeCalendarPage = () => {
   const [employeeColors, setEmployeeColors] = useState({});
   const [employees, setEmployees] = useState([]);
   const [activeStartDate, setActiveStartDate] = useState(new Date());
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [showActionDialog, setShowActionDialog] = useState(false);
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+  const [leaveType, setLeaveType] = useState("病假");
+  const [leaveReason, setLeaveReason] = useState("");
+
+  const [newScheduleStart, setNewScheduleStart] = useState(null);
+  const [newScheduleEnd, setNewScheduleEnd] = useState(null);
+
+  const [isEditing, setIsEditing] = useState(false);
+  // 初始化更新欄位：以 selectedEvent 為初始值
+  const [updatedStakePoint, setUpdatedStakePoint] = useState("");
+  const [updatedLocalPoint, setUpdatedLocalPoint] = useState("");
+  const [updatedWorkArea, setUpdatedWorkArea] = useState("");
+  const [updatedCheckTime, setUpdatedCheckTime] = useState("");
+  const refreshCalender = async () => {
+    const [schedule, leaves] = await Promise.all([
+      getSchedule(),
+      getLeaveRecords(),
+    ]);
+
+    let temp = [];
+    for (let i = 0; i < schedule.length; i++) {
+      const re = splitDateRange(schedule[i]);
+      for (let j = 0; j < re.length; j++) {
+        temp.push(re[j]);
+      }
+    }
+    for (let i = 0; i < leaves.length; i++) {
+      const re = splitDateRange(leaves[i]);
+      for (let j = 0; j < re.length; j++) {
+        temp.push(re[j]);
+      }
+    }
+    console.log(temp);
+    const convertedData = temp.map((item) => ({
+      ...item, // 保留原始屬性
+      start: new Date(item.start), // 將 start 轉為 Date
+      end: new Date(item.end), // 將 end 轉為 Date
+    }));
+    setEvents(convertedData);
+    const filtered = convertedData
+      .filter((event) => event.name === selectedName)
+      .sort((a, b) => a.start - b.start);
+    setFilteredEvents(filtered);
+  };
+  // 當使用者點擊「更新」按鈕時，傳回更新後的資料
+  const handleUpdate = async () => {
+    const updatedData = {
+      stake_point: updatedStakePoint,
+      local_point: updatedLocalPoint,
+      work_area: updatedWorkArea,
+      check_time: updatedCheckTime,
+    };
+    try {
+      await updateTask(selectedEvent.task_id, updatedData);
+      const tasks = await getTasks();
+      await refreshCalender();
+      setTasks(tasks); // 更新 tasks 狀態
+      setSelectedEvent((prevEvent) => ({
+        ...prevEvent,
+        ...updatedData,
+      }));
+    } catch (err) {
+      toast.error(err.response.data.error);
+    }
+
+    setIsEditing(false);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [tasks, schedule, employee] = await Promise.all([
+        const [tasks, schedule, employee, leaves] = await Promise.all([
           getTasks(),
           getSchedule(),
           getEmployee(),
+          getLeaveRecords(),
         ]);
-        console.log(employee);
+        console.log(schedule);
         let temp = [];
         for (let i = 0; i < schedule.length; i++) {
           const re = splitDateRange(schedule[i]);
+          for (let j = 0; j < re.length; j++) {
+            temp.push(re[j]);
+          }
+        }
+        for (let i = 0; i < leaves.length; i++) {
+          const re = splitDateRange(leaves[i]);
           for (let j = 0; j < re.length; j++) {
             temp.push(re[j]);
           }
@@ -170,7 +254,6 @@ const EmployeeCalendarPage = () => {
             mapping[e.name] = palette[index];
           }
         });
-        console.log(filtered);
         setEmployeeColors(mapping);
         setEmployees(employee);
         setTasks(tasks); // 更新 tasks 狀態
@@ -192,7 +275,6 @@ const EmployeeCalendarPage = () => {
   }, []);
   const handleDateChange = (date) => {
     setTaskEndDate(date);
-    console.log(taskEndDate);
   };
   // Helper：根據當前選取日期的「日」數，計算在目標月份中的日期
   const getSameDayInMonth = (date, targetMonthDate) => {
@@ -227,37 +309,42 @@ const EmployeeCalendarPage = () => {
     setView(selectedView);
   };
 
-  const handleSelectSlot = async ({ start, end }) => {
-    const isConfirmed = window.confirm(
-      `規劃以下時間：\n\n員工: ${selectedName}\n開始: ${start}\n結束: ${end}\n\n按「確定」送出需求，按「取消」關閉`
-    );
+  // const handleSelectSlot = async ({ start, end }) => {
+  //   const isConfirmed = window.confirm(
+  //     `規劃以下時間：\n\n員工: ${selectedName}\n開始: ${start}\n結束: ${end}\n\n按「確定」送出需求，按「取消」關閉`
+  //   );
 
-    if (isConfirmed) {
-      console.log(`已規劃時間: 員工 ${selectedName} (${start} - ${end})`);
-      // 送出需求（例如發送 API 請求）
-      await createSchedule(start, end, selectedTask, selectedName);
-      const schedule = await getSchedule();
-      let temp = [];
-      for (let i = 0; i < schedule.length; i++) {
-        const re = splitDateRange(schedule[i]);
-        temp.push(...re);
-      }
+  //   if (isConfirmed) {
+  //     console.log(`已規劃時間: 員工 ${selectedName} (${start} - ${end})`);
+  //     // 送出需求（例如發送 API 請求）
+  //     await createSchedule(start, end, selectedTask, selectedName);
+  //     const schedule = await getSchedule();
+  //     let temp = [];
+  //     for (let i = 0; i < schedule.length; i++) {
+  //       const re = splitDateRange(schedule[i]);
+  //       temp.push(...re);
+  //     }
 
-      console.log(temp);
-      const convertedData = temp.map((item) => ({
-        ...item,
-        start: new Date(item.start),
-        end: new Date(item.end),
-      }));
-      setEvents(convertedData);
-      const filtered = convertedData
-        .filter((event) => event.name === selectedName)
-        .sort((a, b) => a.start - b.start);
-      console.log(filtered);
-      setFilteredEvents(filtered);
-    } else {
-      console.log(`已取消規劃時間: 員工 ${selectedName}`);
-    }
+  //     console.log(temp);
+  //     const convertedData = temp.map((item) => ({
+  //       ...item,
+  //       start: new Date(item.start),
+  //       end: new Date(item.end),
+  //     }));
+  //     setEvents(convertedData);
+  //     const filtered = convertedData
+  //       .filter((event) => event.name === selectedName)
+  //       .sort((a, b) => a.start - b.start);
+  //     console.log(filtered);
+  //     setFilteredEvents(filtered);
+  //   } else {
+  //     console.log(`已取消規劃時間: 員工 ${selectedName}`);
+  //   }
+  // };
+  // 修改 handleSelectSlot：存入所選區間並顯示操作選擇對話框
+  const handleSelectSlot = ({ start, end }) => {
+    setSelectedSlot({ start, end });
+    setShowActionDialog(true);
   };
 
   const handleNameChange = async (e) => {
@@ -273,6 +360,52 @@ const EmployeeCalendarPage = () => {
   const handleSelectTaskChange = (e) => {
     setSelectedTask(e.target.value);
   };
+  // 排班處理，保持原樣
+  const handleSchedule = async () => {
+    try {
+      await createSchedule(
+        selectedSlot.start,
+        selectedSlot.end,
+        selectedTask,
+        selectedName
+      );
+      toast.success("排班成功");
+      await refreshCalender();
+    } catch (error) {
+      toast.error("排班失敗");
+    } finally {
+      setShowActionDialog(false);
+    }
+  };
+
+  // 請假處理，直接使用所選時間區間作為請假起迄時間
+  const handleSubmitLeave = async () => {
+    if (!selectedSlot || !leaveType) {
+      alert("請填寫完整請假資訊");
+      return;
+    }
+    const selectedEmployee = employees.find((emp) => emp.name === selectedName);
+    if (!selectedEmployee) {
+      alert("找不到所選員工");
+      return;
+    }
+    const record = {
+      employee_id: selectedEmployee.employee_id,
+      start_time: selectedSlot.start.toISOString(),
+      end_time: selectedSlot.end.toISOString(),
+      leave_type: leaveType,
+      reason: leaveReason,
+    };
+    try {
+      await addLeaveRecord(record);
+      await refreshCalender();
+      toast.success("請假申請成功");
+    } catch (error) {
+      toast.error("請假申請失敗");
+    } finally {
+      setIsLeaveDialogOpen(false);
+    }
+  };
 
   // 當使用者點選事件時，打開 dialog 並記錄被選取的事件
   const handleEventDialogOpen = (event) => {
@@ -285,7 +418,19 @@ const EmployeeCalendarPage = () => {
     setShowDialog(false);
     setSelectedEvent(null);
   };
-
+  // 基於請假記錄的刪除，假設使用者從 leave record 清單選取後存入 selectedLeave
+  const handleDeleteLeave = async () => {
+    if (!selectedEvent) return;
+    try {
+      await deleteLeaveRecord(selectedEvent.leave_id);
+      toast.success("請假記錄刪除成功");
+      await refreshCalender();
+      handleCloseDialog();
+      // 如有需要可在此刷新 leave records 清單
+    } catch (error) {
+      toast.error("請假記錄刪除失敗");
+    }
+  };
   // 刪除事件的處理，原先的 handleSelectEvent 刪除邏輯搬移至此
   const handleDeleteEvent = async () => {
     if (!selectedEvent) return;
@@ -293,26 +438,7 @@ const EmployeeCalendarPage = () => {
     console.log("刪除事件資料：", selectedEvent);
 
     await deleteSchedule(selectedEvent);
-    const schedule = await getSchedule();
-    var temp = [];
-    for (var i = 0; i < schedule.length; i++) {
-      var re = splitDateRange(schedule[i]);
-      for (var j = 0; j < re.length; j++) {
-        temp.push(re[j]);
-      }
-    }
-
-    const convertedData = temp.map((item) => ({
-      ...item,
-      start: new Date(item.start),
-      end: new Date(item.end),
-    }));
-    setEvents(convertedData);
-    var filtered = convertedData
-      .filter((event) => event.name === selectedName)
-      .sort((a, b) => a.start - b.start);
-    console.log(filtered);
-    setFilteredEvents(filtered);
+    await refreshCalender();
     // 完成刪除後關閉 dialog
     handleCloseDialog();
   };
@@ -342,28 +468,7 @@ const EmployeeCalendarPage = () => {
         alert("Failed to complete task");
         console.error("Failed to complete task");
       } else {
-        const data = await response.json();
-        const schedule = await getSchedule();
-        var temp = [];
-        for (var i = 0; i < schedule.length; i++) {
-          var re = splitDateRange(schedule[i]);
-          for (var j = 0; j < re.length; j++) {
-            temp.push(re[j]);
-          }
-        }
-
-        const convertedData = temp.map((item) => ({
-          ...item,
-          start: new Date(item.start),
-          end: new Date(item.end),
-        }));
-        setEvents(convertedData);
-        var filtered = convertedData
-          .filter((event) => event.name === selectedName)
-          .sort((a, b) => a.start - b.start);
-        console.log(filtered);
-        setFilteredEvents(filtered);
-        console.log("Task completed:", data);
+        await refreshCalender();
         alert("任務已順利完成!");
       }
     } catch (error) {
@@ -372,12 +477,35 @@ const EmployeeCalendarPage = () => {
     }
     handleCloseDialog();
   };
+  const handleAddSchedule = async () => {
+    if (!newScheduleStart || !newScheduleEnd) {
+      alert("請選擇完整的新增排班時間");
+      return;
+    }
+    try {
+      await createSchedule(
+        newScheduleStart,
+        newScheduleEnd,
+        selectedTask,
+        selectedName
+      );
+      toast.success("新增排班成功");
+      await refreshCalender();
+      // 清除輸入的排班時間
+      setNewScheduleStart(null);
+      setNewScheduleEnd(null);
+    } catch (error) {
+      toast.error(error.response.data.error);
+    }
+  };
   // BigCalendar 的 eventPropGetter 利用 mapping 指定顏色
   const eventPropGetter = (event, start, end, isSelected) => {
     // 根據 event.name 取得對應的顏色，若 mapping 中沒有則使用預設顏色
     var backgroundColor = "";
     if (event.is_scheduled === 1) {
       backgroundColor = "#ff4d4d";
+    } else if (event.leave_type) {
+      backgroundColor = "#747e8c";
     } else {
       backgroundColor = employeeColors[event.name] || "#d1d5db";
     }
@@ -477,60 +605,274 @@ const EmployeeCalendarPage = () => {
           />
         </div>
       </div>
+      {/* 操作選擇對話框：讓使用者選擇排班或請假 */}
+      {showActionDialog && selectedSlot && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-md shadow-md w-96">
+            <h3 className="text-xl font-semibold mb-4">選擇操作</h3>
+            <p className="mb-4">
+              選擇時間：{selectedSlot.start.toLocaleString()} -{" "}
+              {selectedSlot.end.toLocaleString()}
+            </p>
+            <div className="flex justify-around">
+              <button
+                onClick={handleSchedule}
+                className="bg-blue-500 text-white px-3 py-2 rounded-md"
+              >
+                排班
+              </button>
+              <button
+                onClick={() => {
+                  setShowActionDialog(false);
+                  setIsLeaveDialogOpen(true);
+                }}
+                className="bg-yellow-500 text-white px-3 py-2 rounded-md"
+              >
+                請假
+              </button>
+            </div>
+            <button
+              onClick={() => setShowActionDialog(false)}
+              className="mt-4 text-gray-500"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
 
+      {/* 請假對話框 */}
+      {isLeaveDialogOpen && selectedSlot && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-md shadow-md w-96">
+            <h3 className="text-xl font-semibold mb-4">請假申請</h3>
+            <p className="mb-2">
+              請假時間：{selectedSlot.start.toLocaleString()} -{" "}
+              {selectedSlot.end.toLocaleString()}
+            </p>
+            <div className="mb-2">
+              <label className="block text-sm font-bold mb-1">請假類別</label>
+              <select
+                value={leaveType}
+                onChange={(e) => setLeaveType(e.target.value)}
+                className="border p-2 w-full"
+              >
+                <option value="病假">病假</option>
+                <option value="事假">事假</option>
+                <option value="特休">特休</option>
+              </select>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-bold mb-1">請假原因</label>
+              <input
+                type="text"
+                value={leaveReason}
+                onChange={(e) => setLeaveReason(e.target.value)}
+                className="border p-2 w-full"
+                placeholder="輸入請假原因"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setIsLeaveDialogOpen(false)}
+                className="px-3 py-2 bg-gray-500 text-white rounded-md"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSubmitLeave}
+                className="px-3 py-2 bg-green-500 text-white rounded-md"
+              >
+                送出
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Dialog Modal */}
       {showDialog && selectedEvent && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="relative bg-white p-6 rounded-md shadow-md w-96">
-            <h3 className="text-xl font-semibold mb-4">操作選擇</h3>
-            {/* 顯示與 formattedText 相同的案件詳細資訊 */}
-            <pre className="bg-gray-100 p-2 rounded-md mb-4 whitespace-pre-wrap text-sm">
-              {`案件編號：${selectedEvent.task_id}
+          {selectedEvent.task_id && (
+            <div className="relative bg-white p-6 rounded-md shadow-md w-96">
+              <h3 className="text-xl font-semibold mb-4">操作選擇</h3>
+              {/* 顯示與 formattedText 相同的案件詳細資訊 */}
+              {!isEditing ? (
+                <div>
+                  <pre className="bg-gray-100 p-2 rounded-md mb-4 whitespace-pre-wrap text-sm flex-col">
+                    {`案件編號：${selectedEvent.task_id}
 工作人員: ${selectedEvent.name}
 地段號: ${selectedEvent.local_point}
 界釘數: ${selectedEvent.stake_point}
 丈量面積: ${selectedEvent.work_area}
 複丈時間:
 ${formatDateToTaiwanTime(selectedEvent.check_time)}`}
-            </pre>
-            <p className="mb-4">
-              請選擇要對任務編號 {selectedEvent.task_id} 進行的操作
-            </p>
-            <div className="flex justify-start space-x-2">
-              <button
-                onClick={handleDeleteEvent}
-                className="bg-red-500 text-white px-3 py-2 rounded-md"
-              >
-                刪除此次排班
-              </button>
-            </div>
-            <div className="flex justify-start space-x-2 mt-1">
-              <button
-                onClick={handleCompleteEvent}
-                className="bg-green-500 text-white px-3 py-2 rounded-md"
-              >
-                完結任務時間
-              </button>
-              <div>
-                <DatePicker
-                  selected={taskEndDate}
-                  onChange={handleDateChange}
-                  showTimeSelect
-                  dateFormat="Pp"
-                  className="border p-2 w-full"
-                  placeholderText="選擇完成任務時間"
-                />
+                  </pre>
+                  <button
+                    onClick={() => {
+                      setIsEditing(true);
+                      setUpdatedLocalPoint(selectedEvent.local_point);
+                      setUpdatedStakePoint(selectedEvent.stake_point);
+                      setUpdatedWorkArea(selectedEvent.work_area);
+                      setUpdatedCheckTime(selectedEvent.check_time);
+                    }}
+                    className="bg-blue-500 text-white px-3 py-2 rounded-md mb-4"
+                  >
+                    修改
+                  </button>
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <div className="mb-2">
+                    <label className="block text-sm font-bold">地段號</label>
+                    <input
+                      type="text"
+                      value={updatedLocalPoint}
+                      onChange={(e) => setUpdatedLocalPoint(e.target.value)}
+                      className="border p-2 w-full"
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <label className="block text-sm font-bold">界釘數</label>
+                    <input
+                      type="number"
+                      value={updatedStakePoint}
+                      onChange={(e) => setUpdatedStakePoint(e.target.value)}
+                      className="border p-2 w-full"
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <label className="block text-sm font-bold">丈量面積</label>
+                    <input
+                      type="number"
+                      value={updatedWorkArea}
+                      onChange={(e) => setUpdatedWorkArea(e.target.value)}
+                      className="border p-2 w-full"
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <label className="block text-sm font-bold">複丈時間</label>
+                    <DatePicker
+                      selected={new Date(updatedCheckTime)}
+                      onChange={(date) => {
+                        console.log(date);
+                        setUpdatedCheckTime(date);
+                      }}
+                      showTimeSelect
+                      dateFormat="Pp"
+                      className="border p-2 w-full"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      onClick={handleUpdate}
+                      className="bg-green-500 text-white px-3 py-2 rounded-md"
+                    >
+                      更新
+                    </button>
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      className="bg-gray-500 text-white px-3 py-2 rounded-md"
+                    >
+                      取消
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <p className="mb-4">
+                請選擇要對任務編號 {selectedEvent.task_id} 進行的操作
+              </p>
+
+              <div className="flex flex-col mt-2">
+                <div className="flex justify-around space-x-2">
+                  <div>
+                    <DatePicker
+                      selected={newScheduleStart}
+                      onChange={(date) => setNewScheduleStart(date)}
+                      showTimeSelect
+                      dateFormat="Pp"
+                      className="border p-2 w-full"
+                      placeholderText="排班開始時間"
+                    />
+                  </div>
+                  <div>
+                    <DatePicker
+                      selected={newScheduleEnd}
+                      onChange={(date) => setNewScheduleEnd(date)}
+                      showTimeSelect
+                      dateFormat="Pp"
+                      className="border p-2 w-full"
+                      placeholderText="排班結束時間"
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={handleAddSchedule}
+                  className="mt-2 bg-blue-500 text-white px-3 py-2 rounded-md"
+                >
+                  送出新增排班
+                </button>
               </div>
+              <div className="flex justify-start space-x-2 mt-1">
+                <button
+                  onClick={handleCompleteEvent}
+                  className="bg-green-500 text-white px-3 py-2 rounded-md"
+                >
+                  完結任務時間
+                </button>
+                <div>
+                  <DatePicker
+                    selected={taskEndDate}
+                    onChange={handleDateChange}
+                    showTimeSelect
+                    dateFormat="Pp"
+                    className="border p-2 w-full"
+                    placeholderText="選擇完成任務時間"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-around space-x-2 mt-1">
+                <button
+                  onClick={handleDeleteEvent}
+                  className="mt-2 bg-red-500 text-white px-3 py-2 rounded-md w-full"
+                >
+                  刪除此次排班
+                </button>
+              </div>
+              <button
+                onClick={handleCloseDialog}
+                className="absolute top-2 right-2 text-gray-500"
+              >
+                X
+              </button>
             </div>
-            <button
-              onClick={handleCloseDialog}
-              className="absolute top-2 right-2 text-gray-500"
-            >
-              X
-            </button>
-          </div>
+          )}
+
+          {selectedEvent.leave_type && (
+            <div className="relative bg-white p-6 rounded-md shadow-md w-96">
+              <h3 className="text-xl font-semibold mb-4">操作選擇</h3>
+
+              <div className="flex justify-start space-x-2">
+                <button
+                  onClick={handleDeleteLeave}
+                  className="bg-red-500 text-white px-3 py-2 rounded-md"
+                >
+                  刪除此次休假
+                </button>
+              </div>
+
+              <button
+                onClick={handleCloseDialog}
+                className="absolute top-2 right-2 text-gray-500"
+              >
+                X
+              </button>
+            </div>
+          )}
         </div>
       )}
+
+      <ToastContainer position="bottom-right" />
     </div>
   );
 };

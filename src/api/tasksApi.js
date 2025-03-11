@@ -96,6 +96,40 @@ export const createTask = async (inputs) => {
     throw error;
   }
 };
+export const updateTask = async (task_id, inputs) => {
+  try {
+    // 驗證 inputs
+    for (const [key, value] of Object.entries(inputs)) {
+      if (
+        value === null ||
+        value === "" ||
+        (typeof value === "string" && value.trim().length === 0)
+      ) {
+        throw new Error(
+          `Invalid value for ${key}. Value cannot be null or empty.`
+        );
+      }
+    }
+
+    const taskData = {
+      local_point: inputs.local_point,
+      stake_point: Number(inputs.stake_point),
+      work_area: Number(inputs.work_area),
+      check_time: inputs.check_time,
+    };
+
+    console.log("Updating task with data:", taskData);
+    const response = await axios.put(`${BASE_URL}/tasks/${task_id}`, taskData);
+    console.log("Task updated:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error updating task:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
 
 // 獲取 schedule 列表的 API
 export const getSchedule = async () => {

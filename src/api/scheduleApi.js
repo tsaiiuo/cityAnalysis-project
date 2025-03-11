@@ -66,6 +66,7 @@ export const createSchedule = async (
       "Error creating Schedule:",
       error.response ? error.response.data : error.message
     );
+    throw error;
   }
 };
 export const autoSchedule = async (start, end, selectedTask, selectedName) => {

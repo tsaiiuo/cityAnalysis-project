@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://127.0.0.1:5000"; // 定義基礎 URL
-
+const BASE_URL = process.env.REACT_APP_BASE_URL;
 // 獲取 Tasks 的 API
 export const getTasks = async () => {
   try {
@@ -96,6 +95,38 @@ export const createTask = async (inputs) => {
     throw error;
   }
 };
+export const completeTask = async (selectedEvent, taskEndDate) => {
+  try {
+    // 驗證 selectedEvent 與 taskEndDate
+    if (!selectedEvent || !selectedEvent.task_id) {
+      throw new Error("Invalid selectedEvent: task_id is required.");
+    }
+    if (
+      taskEndDate === null ||
+      taskEndDate === "" ||
+      (typeof taskEndDate === "string" && taskEndDate.trim().length === 0)
+    ) {
+      throw new Error("Invalid taskEndDate. Value cannot be null or empty.");
+    }
+
+    // 使用 axios 送出 PUT 請求，將 taskEndDate 當作 current_time 傳遞給後端
+    const response = await axios.put(
+      `${BASE_URL}/tasks/complete/${selectedEvent.task_id}`,
+      { current_time: taskEndDate }
+    );
+    console.log("Task completed:", response.data);
+
+    alert("任務已順利完成!");
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error completing task:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
+
 export const updateTask = async (task_id, inputs) => {
   try {
     // 驗證 inputs

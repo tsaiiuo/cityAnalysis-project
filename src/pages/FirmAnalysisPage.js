@@ -23,6 +23,7 @@ ChartJS.register(
   Tooltip,
   Legend
 );
+const BASE_URL = process.env.REACT_APP_BASE_URL;
 
 const DashboardPage = () => {
   // 計算目前月份 (1~12)
@@ -94,15 +95,12 @@ const DashboardPage = () => {
     const fetchEmployeeWorkHours = async () => {
       try {
         const currentYear = new Date().getFullYear();
-        const response = await axios.get(
-          "http://127.0.0.1:5000/monthly_work_hours",
-          {
-            params: {
-              month: selectedMonthEmployee,
-              year: currentYear,
-            },
-          }
-        );
+        const response = await axios.get(`${BASE_URL}/monthly_work_hours`, {
+          params: {
+            month: selectedMonthEmployee,
+            year: currentYear,
+          },
+        });
         // 格式：[{ employee_id, name, total_hours }, ...]
         const data = response.data;
         const labels = data.map((item) => item.name);
@@ -130,12 +128,9 @@ const DashboardPage = () => {
     const fetchMonthlyEventTotals = async () => {
       try {
         const currentYear = new Date().getFullYear();
-        const response = await axios.get(
-          "http://127.0.0.1:5000/tasks/yearly_counts",
-          {
-            params: { year: currentYear },
-          }
-        );
+        const response = await axios.get(`${BASE_URL}/tasks/yearly_counts`, {
+          params: { year: currentYear },
+        });
         // response.data 格式: { "year": <year>, "monthly_counts": [{month: 1, count: ...}, ...] }
         const { monthly_counts } = response.data;
         const counts = Array(12).fill(0);
@@ -179,7 +174,7 @@ const DashboardPage = () => {
       try {
         const currentYear = new Date().getFullYear();
         const response = await axios.get(
-          "http://127.0.0.1:5000/tasks/land_section_stats",
+          `${BASE_URL}/tasks/land_section_stats`,
           {
             params: {
               month: selectedMonthDistribution,

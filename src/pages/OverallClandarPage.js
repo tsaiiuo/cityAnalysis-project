@@ -16,6 +16,7 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { deleteSchedule, getSchedule } from "../api/scheduleApi";
 import { getEmployee } from "../api/employeeApi";
+import { completeTask } from "../api/tasksApi";
 
 const localizer = momentLocalizer(moment);
 
@@ -88,7 +89,6 @@ const splitDateRange = (item) => {
 
 const OverallCalendarPage = () => {
   const [events, setEvents] = useState([]);
-  const [value, onChange] = useState(new Date());
   const [view, setView] = useState(Views.WORK_WEEK);
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -102,6 +102,25 @@ const OverallCalendarPage = () => {
   const [localPointSearch, setLocalPointSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [taskEndDate, setTaskEndDate] = useState("");
+  const refreshCalender = async () => {
+    const [schedule] = await Promise.all([getSchedule()]);
+
+    let temp = [];
+    for (let i = 0; i < schedule.length; i++) {
+      const re = splitDateRange(schedule[i]);
+      for (let j = 0; j < re.length; j++) {
+        temp.push(re[j]);
+      }
+    }
+
+    console.log(temp);
+    const convertedData = temp.map((item) => ({
+      ...item, // 保留原始屬性
+      start: new Date(item.start), // 將 start 轉為 Date
+      end: new Date(item.end), // 將 end 轉為 Date
+    }));
+    setEvents(convertedData);
+  };
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -247,47 +266,12 @@ const OverallCalendarPage = () => {
     }
     console.log("Complete event: ", selectedEvent);
     try {
-      const response = await fetch(
-        `http://127.0.0.1:5000/tasks/complete/${selectedEvent.task_id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          // 將 taskEndDate 當作 current_time 傳遞給後端
-          body: JSON.stringify({
-            current_time: taskEndDate,
-          }),
-        }
-      );
-      if (!response.ok) {
-        alert("Failed to complete task");
-        console.error("Failed to complete task");
-      } else {
-        const data = await response.json();
-        const schedule = await getSchedule();
-        var temp = [];
-        for (var i = 0; i < schedule.length; i++) {
-          var re = splitDateRange(schedule[i]);
-          for (var j = 0; j < re.length; j++) {
-            temp.push(re[j]);
-          }
-        }
-
-        const convertedData = temp.map((item) => ({
-          ...item,
-          start: new Date(item.start),
-          end: new Date(item.end),
-        }));
-        setEvents(convertedData);
-
-        console.log("Task completed:", data);
-        alert("任務已順利完成!");
-      }
+      await completeTask(selectedEvent, taskEndDate);
     } catch (error) {
       console.error("Error completing task:", error);
       alert("Error completing task: " + error.message);
     }
+    refreshCalender();
     handleCloseDialog();
   };
 

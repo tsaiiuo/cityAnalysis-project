@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://127.0.0.1:5000"; // 定義基礎 URL
-
+const BASE_URL = process.env.REACT_APP_BASE_URL;
 // 取得所有請假記錄
 export const getLeaveRecords = async () => {
   try {

@@ -28,7 +28,7 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getEmployee } from "../api/employeeApi";
-import { getTasks } from "../api/tasksApi";
+import { getTasks, completeTask } from "../api/tasksApi";
 
 const localizer = momentLocalizer(moment);
 
@@ -451,30 +451,12 @@ const EmployeeCalendarPage = () => {
     }
     console.log("Complete event: ", selectedEvent);
     try {
-      const response = await fetch(
-        `http://127.0.0.1:5000/tasks/complete/${selectedEvent.task_id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          // 將 taskEndDate 當作 current_time 傳遞給後端
-          body: JSON.stringify({
-            current_time: taskEndDate,
-          }),
-        }
-      );
-      if (!response.ok) {
-        alert("Failed to complete task");
-        console.error("Failed to complete task");
-      } else {
-        await refreshCalender();
-        alert("任務已順利完成!");
-      }
+      await completeTask(selectedEvent, taskEndDate);
     } catch (error) {
       console.error("Error completing task:", error);
       alert("Error completing task: " + error.message);
     }
+    refreshCalender();
     handleCloseDialog();
   };
   const handleAddSchedule = async () => {

@@ -68,6 +68,32 @@ export const updateEmployeeWork = async (inputs) => {
     );
   }
 };
+export const updateEmployee = async (employeeId, updatedData) => {
+  try {
+    // 驗證 employeeId 是否有效
+    const id = Number(employeeId);
+    if (isNaN(id)) {
+      throw new Error("Invalid employee id.");
+    }
+    // (可選) 驗證 updatedData 是否有需要更新的欄位
+    if (!updatedData || Object.keys(updatedData).length === 0) {
+      throw new Error("No fields to update.");
+    }
+    console.log("Updating employee with data:", updatedData);
+    const response = await axios.put(
+      `${BASE_URL}/employees/${id}`,
+      updatedData
+    );
+    console.log("Employee updated successfully:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Error updating employee:",
+      error.response ? error.response.data : error.message
+    );
+    throw error;
+  }
+};
 // 獲取 employee 列表的 API
 export const getEmployee = async () => {
   // 进行预处理检查，确保所有值都不是 null 且不是空字符串或空数组

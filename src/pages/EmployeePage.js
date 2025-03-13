@@ -4,6 +4,7 @@ import {
   updateEmployeeWork,
   getEmployee,
   addEmployee,
+  updateEmployee, // 新增更新員工的 API
 } from "../api/employeeApi"; // 假設 API 呼叫函式已建立
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -14,6 +15,15 @@ const EmployeePage = () => {
 
   // 新增員工的 state
   const [newEmployee, setNewEmployee] = useState({
+    name: "",
+    work: 1,
+    work_hours: 0,
+  });
+
+  // 用於編輯員工的 state
+  const [employeeToEdit, setEmployeeToEdit] = useState(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editEmployeeData, setEditEmployeeData] = useState({
     name: "",
     work: 1,
     work_hours: 0,
@@ -37,7 +47,7 @@ const EmployeePage = () => {
     fetchEmployees();
   }, []);
 
-  // 切換員工工作狀態（若目前 work 為 1，則切換為 0，反之亦然）
+  // 切換員工工作狀態
   const handleToggleWork = async (employee) => {
     const newStatus = employee.work === 1 ? 0 : 1;
     try {
@@ -46,7 +56,6 @@ const EmployeePage = () => {
         work: newStatus,
       });
       console.log("Employee updated:", result);
-      // 更新 state 中該筆員工的狀態
       setEmployees((prevEmployees) =>
         prevEmployees.map((emp) =>
           emp.employee_id === employee.employee_id
@@ -61,13 +70,13 @@ const EmployeePage = () => {
     }
   };
 
-  // 新增員工功能（假設有 addEmployee API）
+  // 新增員工功能
   const handleAddEmployee = async (e) => {
     e.preventDefault();
     try {
       const response = await addEmployee(newEmployee);
       setEmployees([...employees, response]);
-      setNewEmployee({ name: "", work: 0, work_hours: 0 });
+      setNewEmployee({ name: "", work: 1, work_hours: 0 });
       toast.success("新增員工成功");
     } catch (error) {
       console.error("Error adding employee:", error);
@@ -75,12 +84,45 @@ const EmployeePage = () => {
     }
   };
 
+  // 開啟編輯 dialog，並預設填入該員工資料
+  const openEditDialog = (employee) => {
+    setEmployeeToEdit(employee);
+    setEditEmployeeData({
+      name: employee.name,
+      work: employee.work,
+      work_hours: employee.work_hours,
+    });
+    setShowEditDialog(true);
+  };
+
+  // 送出編輯，呼叫 updateEmployee API 更新資料
+  const handleUpdateEmployee = async () => {
+    try {
+      const updated = await updateEmployee(
+        employeeToEdit.employee_id,
+        editEmployeeData
+      );
+      toast.success("員工資料更新成功");
+      // 更新本地 state
+      setEmployees((prevEmployees) =>
+        prevEmployees.map((emp) =>
+          emp.employee_id === employeeToEdit.employee_id
+            ? { ...emp, ...editEmployeeData }
+            : emp
+        )
+      );
+      setShowEditDialog(false);
+      setEmployeeToEdit(null);
+    } catch (error) {
+      toast.error("員工資料更新失敗");
+      console.error("Error updating employee:", error);
+    }
+  };
+
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-gray-50">
-      {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Content */}
       <div className="w-2/3 p-10 overflow-y-auto">
         <h2 className="text-2xl font-semibold mb-6 text-gray-800">
           員工工作狀態管理
@@ -106,7 +148,6 @@ const EmployeePage = () => {
                   placeholder="請輸入員工姓名"
                 />
               </div>
-              {/* 可依需求增加其他欄位，例如初始工時 */}
               <div className="flex justify-end">
                 <button
                   type="submit"
@@ -186,6 +227,12 @@ const EmployeePage = () => {
                         >
                           {employee.work === 1 ? "設定為非工作" : "設定為工作"}
                         </button>
+                        <button
+                          onClick={() => openEditDialog(employee)}
+                          className="ml-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium rounded-md shadow transition-colors duration-150"
+                        >
+                          編輯
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -196,6 +243,79 @@ const EmployeePage = () => {
         )}
       </div>
       <ToastContainer position="bottom-right" />
+
+      {/* 編輯員工 dialog */}
+      {showEditDialog && employeeToEdit && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-md shadow-md w-96">
+            <h3 className="text-xl font-semibold mb-4">編輯員工資訊</h3>
+            <div className="mb-2">
+              <label className="block text-sm font-bold">姓名</label>
+              <input
+                type="text"
+                value={editEmployeeData.name}
+                onChange={(e) =>
+                  setEditEmployeeData({
+                    ...editEmployeeData,
+                    name: e.target.value,
+                  })
+                }
+                className="border p-2 w-full"
+              />
+            </div>
+            <div className="mb-2">
+              <label className="block text-sm font-bold">工作狀態</label>
+              <select
+                value={editEmployeeData.work}
+                onChange={(e) =>
+                  setEditEmployeeData({
+                    ...editEmployeeData,
+                    work: Number(e.target.value),
+                  })
+                }
+                className="border p-2 w-full"
+              >
+                <option value={1}>工作中</option>
+                <option value={0}>非工作中</option>
+              </select>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-bold">總工時</label>
+              <input
+                type="number"
+                value={editEmployeeData.work_hours}
+                onChange={(e) =>
+                  setEditEmployeeData({
+                    ...editEmployeeData,
+                    work_hours: Number(e.target.value),
+                  })
+                }
+                className="border p-2 w-full"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={handleUpdateEmployee}
+                className="bg-green-500 text-white px-3 py-2 rounded-md"
+              >
+                更新
+              </button>
+              <button
+                onClick={() => setShowEditDialog(false)}
+                className="bg-gray-500 text-white px-3 py-2 rounded-md"
+              >
+                取消
+              </button>
+            </div>
+            <button
+              onClick={() => setShowEditDialog(false)}
+              className="absolute top-2 right-2 text-gray-500"
+            >
+              X
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

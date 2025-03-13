@@ -527,34 +527,53 @@ const HomePage = () => {
                 <div
                   key={index}
                   className="p-4 rounded-md border hover:bg-gray-100 cursor-pointer"
-                  onClick={() => {
-                    console.log(convertToUTC(item.start_time));
-                    autoSchedule(
-                      convertToUTC(item.start_time),
-                      convertToUTC(item.end_time),
-                      taskID,
-                      item.assigned_employee
-                    );
-                    console.log(`選擇 ${item.assigned_employee}`);
-                    setIsDialogOpen(false);
-                    window.location.href = `/EmployeeClandar?name=${encodeURIComponent(
-                      item.assigned_employee
-                    )}&taskID=${encodeURIComponent(taskID)}`;
-                  }}
+                  onClick={
+                    item.required_hours === "無法判別地號"
+                      ? undefined
+                      : () => {
+                          console.log(convertToUTC(item.start_time));
+                          autoSchedule(
+                            convertToUTC(item.start_time),
+                            convertToUTC(item.end_time),
+                            taskID,
+                            item.assigned_employee
+                          );
+                          console.log(`選擇 ${item.assigned_employee}`);
+                          setIsDialogOpen(false);
+                          window.location.href = `/EmployeeClandar?name=${encodeURIComponent(
+                            item.assigned_employee
+                          )}&taskID=${encodeURIComponent(taskID)}`;
+                        }
+                  }
                 >
-                  <p className="text-sm text-gray-600">
-                    案件地號：{inputs.localPoint}
-                  </p>
-                  <h4 className="text-lg font-bold mb-2">
-                    選擇 {item.assigned_employee}
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    所需工時：{item.required_hours} 小時
-                  </p>
-                  <p className="text-sm text-gray-600">排班時段：</p>
-                  <p className="text-sm text-gray-600">
-                    {item.assigned_slots.join(", ")}
-                  </p>
+                  {item.required_hours === "無法判別地號" ? (
+                    <div>
+                      {" "}
+                      <p className="text-sm text-gray-600">
+                        案件地號：{inputs.localPoint}
+                      </p>
+                      <h4 className="text-lg font-bold mb-2">
+                        無法判別地號，請自行排班
+                      </h4>
+                    </div>
+                  ) : (
+                    <div>
+                      {" "}
+                      <p className="text-sm text-gray-600">
+                        案件地號：{inputs.localPoint}
+                      </p>
+                      <h4 className="text-lg font-bold mb-2">
+                        選擇 {item.assigned_employee}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        所需工時：{item.required_hours} 小時
+                      </p>
+                      <p className="text-sm text-gray-600">排班時段：</p>
+                      <p className="text-sm text-gray-600">
+                        {item.assigned_slots.join(", ")}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
               {choice.length > 0 && (

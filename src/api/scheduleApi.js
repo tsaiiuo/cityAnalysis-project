@@ -128,6 +128,7 @@ export const postAssignSchedule = async (task_id, required_hours) => {
     task_id,
     required_hours,
   };
+  console.log(data);
 
   try {
     const response = await axios.post(`${BASE_URL}/assign_task`, data, {

@@ -29,6 +29,23 @@ const EventComponent = ({ event }) => {
         </p>
       </div>
     );
+  } else if(event.divide_id){
+    return (
+      <div className="">
+        <p className="text-[12px] font-medium" style={{ color: "black" }}>
+          分割地段: {event.location_num}
+        </p>
+        <p className="text-[12px] font-medium" style={{ color: "black" }}>
+          分割地號: {event.land_num}
+        </p>
+        <p className="text-[10px] mt-1" style={{ color: "black" }}>
+          {formatDateToTaiwanTime(event.start)}
+        </p>
+        <p className="text-[10px] mt-1" style={{ color: "black" }}>
+          {formatDateToTaiwanTime(event.end)}
+        </p>
+      </div>
+    );
   } else if (event.is_scheduled !== undefined) {
     // 原本的排班記錄
     return (

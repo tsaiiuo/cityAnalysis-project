@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import Sidebar from "../components/Sidebar";
 import {
   updateEmployeeWork,
@@ -8,10 +8,12 @@ import {
 } from "../api/employeeApi"; // 假設 API 呼叫函式已建立
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { OfficeContext } from "../officeContext";
 
 const EmployeePage = () => {
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { office } = useContext(OfficeContext);
 
   // 新增員工的 state
   const [newEmployee, setNewEmployee] = useState({
@@ -45,6 +47,7 @@ const EmployeePage = () => {
 
   useEffect(() => {
     fetchEmployees();
+    console.log(office);
   }, []);
 
   // 切換員工工作狀態

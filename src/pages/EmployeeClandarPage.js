@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import Sidebar from "../components/Sidebar";
 import {
   Calendar as BigCalendar,
@@ -29,6 +29,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getEmployee } from "../api/employeeApi";
 import { getTasks, completeTask } from "../api/tasksApi";
+import { OfficeContext } from "../officeContext";
 
 const localizer = momentLocalizer(moment);
 
@@ -127,6 +128,8 @@ const EmployeeCalendarPage = () => {
   const [updatedLocalPoint, setUpdatedLocalPoint] = useState("");
   const [updatedWorkArea, setUpdatedWorkArea] = useState("");
   const [updatedCheckTime, setUpdatedCheckTime] = useState("");
+  const { office } = useContext(OfficeContext);
+
   const refreshCalender = async () => {
     const [schedule, leaves] = await Promise.all([
       getSchedule(),

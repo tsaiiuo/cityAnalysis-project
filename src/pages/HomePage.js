@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import DatePicker from "react-datepicker";
@@ -8,6 +8,7 @@ import { getEmployee } from "../api/employeeApi";
 import { postAssignSchedule, autoSchedule } from "../api/scheduleApi";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { OfficeContext } from "../officeContext";
 
 // 根據 office 回傳對應的地段號選項
 const getLandSectionOptions = (office) => {
@@ -180,6 +181,7 @@ const getLandSectionOptions = (office) => {
 
 const HomePage = () => {
   const location = useLocation();
+  const { office } = useContext(OfficeContext);
 
   const [inputs, setInputs] = useState({
     office: "玉井地政事務所",
@@ -219,13 +221,13 @@ const HomePage = () => {
   ];
 
   // 讀取 URL 中的 office 參數並設定到 inputs.office
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const officeParam = searchParams.get("office");
-    if (officeParam) {
-      setInputs((prev) => ({ ...prev, office: officeParam }));
-    }
-  }, [location.search]);
+  // useEffect(() => {
+  //   const searchParams = new URLSearchParams(location.search);
+  //   const officeParam = searchParams.get("office");
+  //   // if (officeParam) {
+  //   //   setInputs((prev) => ({ ...prev, office: officeParam }));
+  //   // }
+  // }, [location.search]);
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -240,6 +242,10 @@ const HomePage = () => {
       }
     };
     fetchEmployees();
+    if (office) {
+      setInputs((prev) => ({ ...prev, office: office }));
+    }
+    console.log(office);
   }, []);
 
   const handleInputChange = (e) => {
@@ -349,21 +355,13 @@ const HomePage = () => {
           {/* 事務所 */}
           <div>
             <label className="block text-sm font-bold mb-1">事務所</label>
-            <select
+            <input
+              type="text"
               name="office"
-              value={inputs.office}
-              onChange={(e) => {
-                handleInputChange(e);
-                setShowSuggestions(false);
-              }}
+              value={inputs.office.name}
               className="border p-2 w-full"
-            >
-              {offices.map((office) => (
-                <option key={office} value={office}>
-                  {office}
-                </option>
-              ))}
-            </select>
+              placeholder="事務所"
+            />
           </div>
 
           {/* 修改後的「地段號」輸入：支援打 key 或 value 搜尋 */}

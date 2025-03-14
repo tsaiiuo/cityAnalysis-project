@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import Sidebar from "../components/Sidebar";
 import {
   Calendar as BigCalendar,
@@ -17,6 +17,7 @@ import "react-calendar/dist/Calendar.css";
 import { deleteSchedule, getSchedule } from "../api/scheduleApi";
 import { getEmployee } from "../api/employeeApi";
 import { completeTask } from "../api/tasksApi";
+import { OfficeContext } from "../officeContext";
 
 const localizer = momentLocalizer(moment);
 
@@ -102,6 +103,8 @@ const OverallCalendarPage = () => {
   const [localPointSearch, setLocalPointSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [taskEndDate, setTaskEndDate] = useState("");
+  const { office } = useContext(OfficeContext);
+
   const refreshCalender = async () => {
     const [schedule] = await Promise.all([getSchedule()]);
 

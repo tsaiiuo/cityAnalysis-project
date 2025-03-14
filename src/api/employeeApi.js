@@ -15,6 +15,7 @@ export const addEmployee = async (employeeData) => {
       work: employeeData.work !== undefined ? employeeData.work : 1,
       work_hours:
         employeeData.work_hours !== undefined ? employeeData.work_hours : 0,
+      office_id: employeeData.office_id,
     };
 
     console.log("Adding employee with data:", payload);
@@ -95,18 +96,19 @@ export const updateEmployee = async (employeeId, updatedData) => {
   }
 };
 // 獲取 employee 列表的 API
-export const getEmployee = async () => {
-  // 进行预处理检查，确保所有值都不是 null 且不是空字符串或空数组
-
+export const getEmployee = async (office_id) => {
   try {
-    const response = await axios.get(`${BASE_URL}/employees`);
-    // console.log("Schedule got:", response.data);
+    let url = `${BASE_URL}/employees`;
+    if (office_id) {
+      url += `?office_id=${encodeURIComponent(office_id)}`;
+    }
+    const response = await axios.get(url);
     return response.data;
-    // setEvents()
   } catch (error) {
     console.error(
-      "Error get employee:",
+      "Error getting employee:",
       error.response ? error.response.data : error.message
     );
+    throw error;
   }
 };

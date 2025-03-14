@@ -20,6 +20,7 @@ const EmployeePage = () => {
     name: "",
     work: 1,
     work_hours: 0,
+    office_id: office ? office.office_id : 0,
   });
 
   // 用於編輯員工的 state
@@ -29,13 +30,14 @@ const EmployeePage = () => {
     name: "",
     work: 1,
     work_hours: 0,
+    office_id: office ? office.office_id : 0,
   });
 
   // 取得所有員工資料
   const fetchEmployees = async () => {
     setIsLoading(true);
     try {
-      const response = await getEmployee();
+      const response = await getEmployee(office.office_id);
       console.log(response);
       setEmployees(response);
     } catch (error) {
@@ -79,7 +81,12 @@ const EmployeePage = () => {
     try {
       const response = await addEmployee(newEmployee);
       setEmployees([...employees, response]);
-      setNewEmployee({ name: "", work: 1, work_hours: 0 });
+      setNewEmployee({
+        name: "",
+        work: 1,
+        work_hours: 0,
+        office_id: office ? office.office_id : 0,
+      });
       toast.success("新增員工成功");
     } catch (error) {
       console.error("Error adding employee:", error);
@@ -94,6 +101,7 @@ const EmployeePage = () => {
       name: employee.name,
       work: employee.work,
       work_hours: employee.work_hours,
+      office_id: office ? office.office_id : 0,
     });
     setShowEditDialog(true);
   };

@@ -29,7 +29,7 @@ const EventComponent = ({ event }) => {
         </p>
       </div>
     );
-  } else if(event.divide_id){
+  } else if (event.divide_id) {
     return (
       <div className="">
         <p className="text-[12px] font-medium" style={{ color: "black" }}>
@@ -43,6 +43,12 @@ const EventComponent = ({ event }) => {
         </p>
         <p className="text-[10px] mt-1" style={{ color: "black" }}>
           {formatDateToTaiwanTime(event.end)}
+        </p>
+        <p
+          style={{ color: event.is_scheduled === 0 ? "#6b7280" : "black" }}
+          className="text-[10px] mt-1"
+        >
+          {event.name}
         </p>
       </div>
     );

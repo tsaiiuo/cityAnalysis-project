@@ -2,9 +2,13 @@ import axios from "axios";
 
 const BASE_URL = process.env.REACT_APP_BASE_URL;
 // 取得所有請假記錄
-export const getLeaveRecords = async () => {
+export const getLeaveRecords = async (office_id) => {
   try {
-    const response = await axios.get(`${BASE_URL}/leave_records`);
+    let url = `${BASE_URL}/leave_records`;
+    if (office_id) {
+      url += `?office_id=${encodeURIComponent(office_id)}`;
+    }
+    const response = await axios.get(url);
     console.log("Leave records:", response.data);
     return response.data;
   } catch (error) {

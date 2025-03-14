@@ -25,6 +25,13 @@ import {
   deleteLeaveRecord,
   getLeaveRecords,
 } from "../api/leaveApi"; // 請假 API
+
+import {
+  addDivideRecord,
+  deleteDivideRecord,
+  getDivideRecords,
+} from "../api/divideApi"; // 請假 API
+
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { getEmployee } from "../api/employeeApi";
@@ -117,6 +124,11 @@ const EmployeeCalendarPage = () => {
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [leaveType, setLeaveType] = useState("病假");
   const [leaveReason, setLeaveReason] = useState("");
+  //分割
+  const [isDivideDilogOpen, setIsDivideDialogOpen] = useState(false)
+  const [locationNum, setDivideLocation] = useState("");
+  const [landNum, setDivideLandNum] = useState("");
+
 
   const [newScheduleStart, setNewScheduleStart] = useState(null);
   const [newScheduleEnd, setNewScheduleEnd] = useState(null);
@@ -128,9 +140,10 @@ const EmployeeCalendarPage = () => {
   const [updatedWorkArea, setUpdatedWorkArea] = useState("");
   const [updatedCheckTime, setUpdatedCheckTime] = useState("");
   const refreshCalender = async () => {
-    const [schedule, leaves] = await Promise.all([
+    const [schedule, leaves, divide] = await Promise.all([
       getSchedule(),
       getLeaveRecords(),
+      getDivideRecords()
     ]);
 
     let temp = [];
@@ -142,6 +155,12 @@ const EmployeeCalendarPage = () => {
     }
     for (let i = 0; i < leaves.length; i++) {
       const re = splitDateRange(leaves[i]);
+      for (let j = 0; j < re.length; j++) {
+        temp.push(re[j]);
+      }
+    }
+    for (let i = 0; i < divide.length; i++) {
+      const re = splitDateRange(divide[i]);
       for (let j = 0; j < re.length; j++) {
         temp.push(re[j]);
       }
@@ -190,6 +209,7 @@ const EmployeeCalendarPage = () => {
           getSchedule(),
           getEmployee(),
           getLeaveRecords(),
+          getDivideRecords(),
         ]);
         console.log(schedule);
         let temp = [];
@@ -378,7 +398,35 @@ const EmployeeCalendarPage = () => {
     }
   };
 
-  // 請假處理，直接使用所選時間區間作為請假起迄時間
+  // 
+  const handleSubmitDivide = async () => {
+    if (!selectedSlot || !locationNum || !landNum) {
+      alert("請填寫完整分割資訊");
+      return;
+    }
+    const selectedEmployee = employees.find((emp) => emp.name === selectedName);
+    if (!selectedEmployee) {
+      alert("找不到所選員工");
+      return;
+    }
+    const record = {
+      employee_id: selectedEmployee.employee_id,
+      start_time: selectedSlot.start.toISOString(),
+      end_time: selectedSlot.end.toISOString(),
+      location_num: locationNum,
+      land_num: landNum,
+    };
+    try {
+      await addDivideRecord(record);
+      await refreshCalender();
+      toast.success("分割成功");
+    } catch (error) {
+      toast.error("分割失敗");
+    } finally {
+      setIsDivideDialogOpen(false);
+    }
+  };
+
   const handleSubmitLeave = async () => {
     if (!selectedSlot || !leaveType) {
       alert("請填寫完整請假資訊");
@@ -429,6 +477,19 @@ const EmployeeCalendarPage = () => {
       // 如有需要可在此刷新 leave records 清單
     } catch (error) {
       toast.error("請假記錄刪除失敗");
+    }
+  };
+  // 基於分割記錄的刪除，假設使用者從 leave record 清單選取後存入 selectedDivide
+  const handleDeleteDivide = async () => {
+    if (!selectedEvent) return;
+    try {
+      await deleteDivideRecord(selectedEvent.divide_id);
+      toast.success("分割記錄刪除成功");
+      await refreshCalender();
+      handleCloseDialog();
+      // 如有需要可在此刷新 leave records 清單
+    } catch (error) {
+      toast.error("分割記錄刪除失敗");
     }
   };
   // 刪除事件的處理，原先的 handleSelectEvent 刪除邏輯搬移至此
@@ -488,7 +549,9 @@ const EmployeeCalendarPage = () => {
       backgroundColor = "#ff4d4d";
     } else if (event.leave_type) {
       backgroundColor = "#747e8c";
-    } else {
+    }else if (event.divide_id) {
+      backgroundColor = "#BDB76B";
+    }else {
       backgroundColor = employeeColors[event.name] || "#d1d5db";
     }
     return {
@@ -606,6 +669,15 @@ const EmployeeCalendarPage = () => {
               <button
                 onClick={() => {
                   setShowActionDialog(false);
+                  setIsDivideDialogOpen(true);
+                }}
+                className="bg-yellow-500 text-white px-3 py-2 rounded-md"
+              >
+                分割
+              </button>
+              <button
+                onClick={() => {
+                  setShowActionDialog(false);
                   setIsLeaveDialogOpen(true);
                 }}
                 className="bg-yellow-500 text-white px-3 py-2 rounded-md"
@@ -623,6 +695,52 @@ const EmployeeCalendarPage = () => {
         </div>
       )}
 
+      {/* 分割對話框 */}
+      {isDivideDilogOpen && selectedSlot && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-md shadow-md w-96">
+            <h3 className="text-xl font-semibold mb-4">分割申請</h3>
+            <p className="mb-2">
+              分割時間：{selectedSlot.start.toLocaleString()} -{" "}
+              {selectedSlot.end.toLocaleString()}
+            </p>
+            <div className="mb-2">
+              <label className="block text-sm font-bold mb-1">分割地段</label>
+              <input
+                type="text"
+                value={locationNum}
+                onChange={(e) => setDivideLocation(e.target.value)}
+                className="border p-2 w-full"
+                placeholder="輸入地段"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-bold mb-1">分割地號</label>
+              <input
+                type="text"
+                value={landNum}
+                onChange={(e) => setDivideLandNum(e.target.value)}
+                className="border p-2 w-full"
+                placeholder="輸入地號"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setIsDivideDialogOpen(false)}
+                className="px-3 py-2 bg-gray-500 text-white rounded-md"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSubmitDivide}
+                className="px-3 py-2 bg-green-500 text-white rounded-md"
+              >
+                送出
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* 請假對話框 */}
       {isLeaveDialogOpen && selectedSlot && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -840,6 +958,28 @@ ${formatDateToTaiwanTime(selectedEvent.check_time)}`}
                   className="bg-red-500 text-white px-3 py-2 rounded-md"
                 >
                   刪除此次休假
+                </button>
+              </div>
+
+              <button
+                onClick={handleCloseDialog}
+                className="absolute top-2 right-2 text-gray-500"
+              >
+                X
+              </button>
+            </div>
+          )}
+
+          {selectedEvent.divide_id && (
+            <div className="relative bg-white p-6 rounded-md shadow-md w-96">
+              <h3 className="text-xl font-semibold mb-4">操作選擇</h3>
+
+              <div className="flex justify-start space-x-2">
+                <button
+                  onClick={handleDeleteDivide}
+                  className="bg-red-500 text-white px-3 py-2 rounded-md"
+                >
+                  刪除此次分割
                 </button>
               </div>
 

@@ -125,9 +125,14 @@ export const getSchedule = async (office_id) => {
   }
 };
 
-export const postAssignSchedule = async (task_id, required_hours) => {
+export const postAssignSchedule = async (
+  task_id,
+  office_id,
+  required_hours
+) => {
   const data = {
     task_id,
+    office_id,
     required_hours,
   };
   console.log(data);

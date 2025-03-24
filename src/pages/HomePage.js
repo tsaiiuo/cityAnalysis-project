@@ -288,6 +288,7 @@ const HomePage = () => {
       console.log(timeData);
       const assignScheduleData = await postAssignSchedule(
         taskData.task_id,
+        office.office_id,
         timeData
       );
       const temp = [];

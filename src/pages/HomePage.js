@@ -546,10 +546,14 @@ const HomePage = () => {
                     className="block p-4 rounded-md border hover:bg-gray-100 cursor-pointer"
                     onClick={() => {
                       console.log(convertToUTC(item.start_time));
+                      const foundEmployee = employees.find(
+                        (employee) => employee.name === item.assigned_employee
+                      );
                       autoSchedule(
                         convertToUTC(item.start_time),
                         convertToUTC(item.end_time),
                         taskID,
+                        foundEmployee.employee_id,
                         item.assigned_employee
                       );
                       console.log(`選擇 ${item.assigned_employee}`);

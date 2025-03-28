@@ -34,6 +34,7 @@ export const createSchedule = async (
   start,
   end,
   selectedTask,
+  employee_id,
   selectedName
 ) => {
   // 进行预处理检查，确保所有值都不是 null 且不是空字符串或空数组
@@ -43,6 +44,7 @@ export const createSchedule = async (
       start_time: start,
       end_time: end,
       name: selectedName,
+      employee_id: employee_id,
       task_id: Number(selectedTask),
     };
     console.log(scheduleData);
@@ -68,7 +70,13 @@ export const createSchedule = async (
     throw error;
   }
 };
-export const autoSchedule = async (start, end, selectedTask, selectedName) => {
+export const autoSchedule = async (
+  start,
+  end,
+  selectedTask,
+  employee_id,
+  selectedName
+) => {
   // 进行预处理检查，确保所有值都不是 null 且不是空字符串或空数组
 
   try {
@@ -80,6 +88,7 @@ export const autoSchedule = async (start, end, selectedTask, selectedName) => {
       start_time: start,
       end_time: end_time,
       name: selectedName,
+      employee_id: employee_id,
       task_id: Number(selectedTask),
     };
     console.log(end);

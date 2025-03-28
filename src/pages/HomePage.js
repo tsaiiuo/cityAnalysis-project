@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -182,6 +182,7 @@ const getLandSectionOptions = (office) => {
 const HomePage = () => {
   const location = useLocation();
   const { office } = useContext(OfficeContext);
+  const navigate = useNavigate();
 
   const [inputs, setInputs] = useState({
     office: "玉井地政事務所",
@@ -538,18 +539,18 @@ const HomePage = () => {
                     </h4>
                   </Link>
                 ) : (
-                  <Link
+                  <a
                     key={index}
-                    to={`/EmployeeClandar?name=${encodeURIComponent(
-                      item.assigned_employee
-                    )}&taskID=${encodeURIComponent(taskID)}`}
+                    href="#"
                     className="block p-4 rounded-md border hover:bg-gray-100 cursor-pointer"
-                    onClick={() => {
+                    onClick={async (e) => {
+                      e.preventDefault();
                       console.log(convertToUTC(item.start_time));
                       const foundEmployee = employees.find(
                         (employee) => employee.name === item.assigned_employee
                       );
-                      autoSchedule(
+                      // 等待 autoSchedule 完成後再導航
+                      await autoSchedule(
                         convertToUTC(item.start_time),
                         convertToUTC(item.end_time),
                         taskID,
@@ -558,6 +559,11 @@ const HomePage = () => {
                       );
                       console.log(`選擇 ${item.assigned_employee}`);
                       setIsDialogOpen(false);
+                      navigate(
+                        `/EmployeeClandar?name=${encodeURIComponent(
+                          item.assigned_employee
+                        )}&taskID=${encodeURIComponent(taskID)}`
+                      );
                     }}
                   >
                     <p className="text-sm text-gray-600">
@@ -573,7 +579,7 @@ const HomePage = () => {
                     <p className="text-sm text-gray-600">
                       {item.assigned_slots.join(", ")}
                     </p>
-                  </Link>
+                  </a>
                 )
               )}
 

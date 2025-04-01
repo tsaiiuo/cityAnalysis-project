@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { Bar, Line } from "react-chartjs-2";
 import Sidebar from "../components/Sidebar";
 import axios from "axios";
@@ -12,6 +12,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { OfficeContext } from "../officeContext";
 
 // 註冊 chart.js 元件
 ChartJS.register(
@@ -89,6 +90,7 @@ const DashboardPage = () => {
         },
       ],
     });
+  const { office } = useContext(OfficeContext);
 
   // 取得該月所有員工工時總計 (依 monthly_work_hours API)
   useEffect(() => {
@@ -99,6 +101,7 @@ const DashboardPage = () => {
           params: {
             month: selectedMonthEmployee,
             year: currentYear,
+            office_id: office.office_id,
           },
         });
         // 格式：[{ employee_id, name, total_hours }, ...]
@@ -129,7 +132,7 @@ const DashboardPage = () => {
       try {
         const currentYear = new Date().getFullYear();
         const response = await axios.get(`${BASE_URL}/tasks/yearly_counts`, {
-          params: { year: currentYear },
+          params: { year: currentYear, office_id: office.office_id },
         });
         // response.data 格式: { "year": <year>, "monthly_counts": [{month: 1, count: ...}, ...] }
         const { monthly_counts } = response.data;
@@ -179,6 +182,7 @@ const DashboardPage = () => {
             params: {
               month: selectedMonthDistribution,
               year: currentYear,
+              office_id: office.office_id,
             },
           }
         );

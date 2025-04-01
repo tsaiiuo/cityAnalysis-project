@@ -34,6 +34,7 @@ export const createSchedule = async (
   start,
   end,
   selectedTask,
+  employee_id,
   selectedName
 ) => {
   // 进行预处理检查，确保所有值都不是 null 且不是空字符串或空数组
@@ -43,6 +44,7 @@ export const createSchedule = async (
       start_time: start,
       end_time: end,
       name: selectedName,
+      employee_id: employee_id,
       task_id: Number(selectedTask),
     };
     console.log(scheduleData);
@@ -68,7 +70,13 @@ export const createSchedule = async (
     throw error;
   }
 };
-export const autoSchedule = async (start, end, selectedTask, selectedName) => {
+export const autoSchedule = async (
+  start,
+  end,
+  selectedTask,
+  employee_id,
+  selectedName
+) => {
   // 进行预处理检查，确保所有值都不是 null 且不是空字符串或空数组
 
   try {
@@ -80,6 +88,7 @@ export const autoSchedule = async (start, end, selectedTask, selectedName) => {
       start_time: start,
       end_time: end_time,
       name: selectedName,
+      employee_id: employee_id,
       task_id: Number(selectedTask),
     };
     console.log(end);
@@ -108,24 +117,31 @@ export const autoSchedule = async (start, end, selectedTask, selectedName) => {
 };
 
 // 獲取 schedule 列表的 API
-export const getSchedule = async () => {
-  // 进行预处理检查，确保所有值都不是 null 且不是空字符串或空数组
-
+export const getSchedule = async (office_id) => {
   try {
-    const response = await axios.get(`${BASE_URL}/schedule`);
-    // console.log("Schedule got:", response.data);
+    let url = `${BASE_URL}/schedule`;
+    if (office_id) {
+      url += `?office_id=${encodeURIComponent(office_id)}`;
+    }
+    const response = await axios.get(url);
     return response.data;
-    // setEvents()
   } catch (error) {
     console.error(
-      "Error get Schedule:",
+      "Error getting schedule:",
       error.response ? error.response.data : error.message
     );
+    throw error;
   }
 };
-export const postAssignSchedule = async (task_id, required_hours) => {
+
+export const postAssignSchedule = async (
+  task_id,
+  office_id,
+  required_hours
+) => {
   const data = {
     task_id,
+    office_id,
     required_hours,
   };
   console.log(data);

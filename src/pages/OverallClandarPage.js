@@ -7,18 +7,27 @@ import {
 } from "react-big-calendar";
 import DatePicker from "react-datepicker";
 
-import axios from "axios";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import EventComponent from "../components/EventComponent";
-import LitleComponent from "../components/LittleComponent";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { deleteSchedule, getSchedule } from "../api/scheduleApi";
+import {
+  deleteSchedule,
+  getSchedule,
+  createSchedule,
+} from "../api/scheduleApi";
 import { getEmployee } from "../api/employeeApi";
-import { completeTask } from "../api/tasksApi";
 import { OfficeContext } from "../officeContext";
 
+import {
+  addDivideRecord,
+  deleteDivideRecord,
+  getDivideRecords,
+} from "../api/divideApi"; // 請假 API
+
+import "react-toastify/dist/ReactToastify.css";
+import { completeTask } from "../api/tasksApi";
 const localizer = momentLocalizer(moment);
 
 // Helper: 將 ISO 時間轉換成台灣時區格式
@@ -106,11 +115,20 @@ const OverallCalendarPage = () => {
   const { office } = useContext(OfficeContext);
 
   const refreshCalender = async () => {
-    const [schedule] = await Promise.all([getSchedule()]);
+    const [schedule, divide] = await Promise.all([
+      getSchedule(office.office_id),
+      getDivideRecords(office.office_id),
+    ]);
 
     let temp = [];
     for (let i = 0; i < schedule.length; i++) {
       const re = splitDateRange(schedule[i]);
+      for (let j = 0; j < re.length; j++) {
+        temp.push(re[j]);
+      }
+    }
+    for (let i = 0; i < divide.length; i++) {
+      const re = splitDateRange(divide[i]);
       for (let j = 0; j < re.length; j++) {
         temp.push(re[j]);
       }
@@ -127,14 +145,21 @@ const OverallCalendarPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [schedule, employee] = await Promise.all([
-          getSchedule(),
-          getEmployee(),
+        const [schedule, employee, divide] = await Promise.all([
+          getSchedule(office.office_id),
+          getEmployee(office.office_id),
+          getDivideRecords(office.office_id),
         ]);
 
         let temp = [];
         for (let i = 0; i < schedule.length; i++) {
           const re = splitDateRange(schedule[i]);
+          for (let j = 0; j < re.length; j++) {
+            temp.push(re[j]);
+          }
+        }
+        for (let i = 0; i < divide.length; i++) {
+          const re = splitDateRange(divide[i]);
           for (let j = 0; j < re.length; j++) {
             temp.push(re[j]);
           }
@@ -282,6 +307,10 @@ const OverallCalendarPage = () => {
     let backgroundColor = "";
     if (event.is_scheduled === 1) {
       backgroundColor = "#ff4d4d";
+    } else if (event.leave_type) {
+      backgroundColor = "#747e8c";
+    } else if (event.divide_id) {
+      backgroundColor = "#BDB76B";
     } else {
       backgroundColor = employeeColors[event.name] || "#d1d5db";
     }

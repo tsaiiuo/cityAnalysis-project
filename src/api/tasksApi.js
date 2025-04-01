@@ -2,18 +2,19 @@ import axios from "axios";
 
 const BASE_URL = process.env.REACT_APP_BASE_URL;
 // 獲取 Tasks 的 API
-export const getTasks = async () => {
+export const getTasks = async (is_scheduled = false, office_id = null) => {
   try {
-    const response = await axios.get(`${BASE_URL}/tasks`, {
-      data: { is_scheduled: false }, // 傳遞 body 資料
-    });
+    const params = { is_scheduled };
+    if (office_id) {
+      params.office_id = office_id;
+    }
+    const response = await axios.get(`${BASE_URL}/tasks`, { params });
     console.log(response.data);
     return response.data;
   } catch (err) {
-    // setError(err.message); // 捕獲錯誤訊息
     console.log(err);
   } finally {
-    // setIsLoading(false); // 無論成功或失敗，結束加載
+    // 你可以在此處關閉加載狀態
   }
 };
 
@@ -34,6 +35,7 @@ export const timePredict = async (inputs) => {
     const cadastral_arrangement = inputs.cadastralArrangement === "是";
     const taskData = {
       office: inputs.office,
+      office_id: inputs.office_id,
       adm_num: Number(inputs.landSection),
       land_num: inputs.localPoints[0],
       points: Number(inputs.stakePoints),
@@ -73,6 +75,7 @@ export const createTask = async (inputs) => {
     const cadastral_arrangement = inputs.cadastralArrangement === "是";
     const taskData = {
       office_name: inputs.office,
+      office_id: inputs.office_id,
       land_section: Number(inputs.landSection),
       local_point: inputs.localPoint,
       stake_point: Number(inputs.stakePoints),

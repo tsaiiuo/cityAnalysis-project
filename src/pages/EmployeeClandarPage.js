@@ -126,10 +126,9 @@ const EmployeeCalendarPage = () => {
   const [leaveType, setLeaveType] = useState("病假");
   const [leaveReason, setLeaveReason] = useState("");
   //分割
-  const [isDivideDilogOpen, setIsDivideDialogOpen] = useState(false)
+  const [isDivideDilogOpen, setIsDivideDialogOpen] = useState(false);
   const [locationNum, setDivideLocation] = useState("");
   const [landNum, setDivideLandNum] = useState("");
-
 
   const [newScheduleStart, setNewScheduleStart] = useState(null);
   const [newScheduleEnd, setNewScheduleEnd] = useState(null);
@@ -144,9 +143,9 @@ const EmployeeCalendarPage = () => {
 
   const refreshCalender = async () => {
     const [schedule, leaves, divide] = await Promise.all([
-      getSchedule(),
-      getLeaveRecords(),
-      getDivideRecords()
+      getSchedule(office.office_id),
+      getLeaveRecords(office.office_id),
+      getDivideRecords(office.office_id),
     ]);
 
     let temp = [];
@@ -190,7 +189,7 @@ const EmployeeCalendarPage = () => {
     };
     try {
       await updateTask(selectedEvent.task_id, updatedData);
-      const tasks = await getTasks();
+      const tasks = await getTasks(false, office.office_id);
       await refreshCalender();
       setTasks(tasks); // 更新 tasks 狀態
       setSelectedEvent((prevEvent) => ({
@@ -207,13 +206,14 @@ const EmployeeCalendarPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [tasks, schedule, employee, leaves] = await Promise.all([
-          getTasks(),
-          getSchedule(),
-          getEmployee(),
-          getLeaveRecords(),
-          getDivideRecords(),
+        const [tasks, schedule, employee, leaves, divide] = await Promise.all([
+          getTasks(false, office.office_id),
+          getSchedule(office.office_id),
+          getEmployee(office.office_id),
+          getLeaveRecords(office.office_id),
+          getDivideRecords(office.office_id),
         ]);
+        setTasks(tasks); // 更新 tasks 狀態
         console.log(schedule);
         let temp = [];
         for (let i = 0; i < schedule.length; i++) {
@@ -224,6 +224,12 @@ const EmployeeCalendarPage = () => {
         }
         for (let i = 0; i < leaves.length; i++) {
           const re = splitDateRange(leaves[i]);
+          for (let j = 0; j < re.length; j++) {
+            temp.push(re[j]);
+          }
+        }
+        for (let i = 0; i < divide.length; i++) {
+          const re = splitDateRange(divide[i]);
           for (let j = 0; j < re.length; j++) {
             temp.push(re[j]);
           }
@@ -254,7 +260,11 @@ const EmployeeCalendarPage = () => {
             .filter((event) => event.name === schedule[0].name)
             .sort((a, b) => a.start - b.start);
           setFilteredEvents(filtered);
-          setSelectedName(convertedData[0].name);
+          if (convertedData[0]) {
+            setSelectedName(convertedData[0].name);
+          } else {
+            setSelectedName(employee[0]);
+          }
         }
 
         const palette = [
@@ -279,7 +289,6 @@ const EmployeeCalendarPage = () => {
         });
         setEmployeeColors(mapping);
         setEmployees(employee);
-        setTasks(tasks); // 更新 tasks 狀態
 
         // 取得 URL 參數中的 taskID，若有則以該 taskID 作為預設選擇，否則使用 tasks[0].task_id
         const taskIDParam = params.get("taskID");
@@ -386,10 +395,14 @@ const EmployeeCalendarPage = () => {
   // 排班處理，保持原樣
   const handleSchedule = async () => {
     try {
+      const foundEmployee = employees.find(
+        (employee) => employee.name === selectedName
+      );
       await createSchedule(
         selectedSlot.start,
         selectedSlot.end,
         selectedTask,
+        foundEmployee.employee_id,
         selectedName
       );
       toast.success("排班成功");
@@ -401,7 +414,7 @@ const EmployeeCalendarPage = () => {
     }
   };
 
-  // 
+  //
   const handleSubmitDivide = async () => {
     if (!selectedSlot || !locationNum || !landNum) {
       alert("請填寫完整分割資訊");
@@ -529,10 +542,14 @@ const EmployeeCalendarPage = () => {
       return;
     }
     try {
+      const foundEmployee = employees.find(
+        (employee) => employee.name === selectedName
+      );
       await createSchedule(
         newScheduleStart,
         newScheduleEnd,
         selectedTask,
+        foundEmployee.employee_id,
         selectedName
       );
       toast.success("新增排班成功");
@@ -552,9 +569,9 @@ const EmployeeCalendarPage = () => {
       backgroundColor = "#ff4d4d";
     } else if (event.leave_type) {
       backgroundColor = "#747e8c";
-    }else if (event.divide_id) {
+    } else if (event.divide_id) {
       backgroundColor = "#BDB76B";
-    }else {
+    } else {
       backgroundColor = employeeColors[event.name] || "#d1d5db";
     }
     return {

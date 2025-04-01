@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -182,9 +182,11 @@ const getLandSectionOptions = (office) => {
 const HomePage = () => {
   const location = useLocation();
   const { office } = useContext(OfficeContext);
+  const navigate = useNavigate();
 
   const [inputs, setInputs] = useState({
     office: "玉井地政事務所",
+    office_id: office ? office.office_id : 0,
     landSection: "", // 儲存最後選取的數值
     localPoint: "",
     localPoints: [],
@@ -232,7 +234,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const employeeData = await getEmployee();
+        const employeeData = await getEmployee(office.office_id);
         setEmployees(employeeData);
         if (employeeData && employeeData.length > 0) {
           setSelectedEmployeeFlex(employeeData[0].name);
@@ -243,7 +245,7 @@ const HomePage = () => {
     };
     fetchEmployees();
     if (office) {
-      setInputs((prev) => ({ ...prev, office: office }));
+      setInputs((prev) => ({ ...prev, office: office.name }));
     }
     console.log(office);
   }, []);
@@ -287,6 +289,7 @@ const HomePage = () => {
       console.log(timeData);
       const assignScheduleData = await postAssignSchedule(
         taskData.task_id,
+        office.office_id,
         timeData
       );
       const temp = [];
@@ -358,7 +361,7 @@ const HomePage = () => {
             <input
               type="text"
               name="office"
-              value={inputs.office.name}
+              value={inputs.office}
               className="border p-2 w-full"
               placeholder="事務所"
             />
@@ -521,59 +524,65 @@ const HomePage = () => {
           <div className="bg-white p-6 rounded-md w-3/5">
             <h3 className="text-xl font-semibold mb-4">選擇下一步</h3>
             <div className="grid grid-cols-3 gap-4 mb-4">
-              {choice.map((item, index) => (
-                <div
-                  key={index}
-                  className="p-4 rounded-md border hover:bg-gray-100 cursor-pointer"
-                  onClick={
-                    item.required_hours === "無法判別地號"
-                      ? undefined
-                      : () => {
-                          console.log(convertToUTC(item.start_time));
-                          autoSchedule(
-                            convertToUTC(item.start_time),
-                            convertToUTC(item.end_time),
-                            taskID,
-                            item.assigned_employee
-                          );
-                          console.log(`選擇 ${item.assigned_employee}`);
-                          setIsDialogOpen(false);
-                          window.location.href = `/EmployeeClandar?name=${encodeURIComponent(
-                            item.assigned_employee
-                          )}&taskID=${encodeURIComponent(taskID)}`;
-                        }
-                  }
-                >
-                  {item.required_hours === "無法判別地號" ? (
-                    <div>
-                      {" "}
-                      <p className="text-sm text-gray-600">
-                        案件地號：{inputs.localPoint}
-                      </p>
-                      <h4 className="text-lg font-bold mb-2">
-                        無法判別地號，請自行排班
-                      </h4>
-                    </div>
-                  ) : (
-                    <div>
-                      {" "}
-                      <p className="text-sm text-gray-600">
-                        案件地號：{inputs.localPoint}
-                      </p>
-                      <h4 className="text-lg font-bold mb-2">
-                        選擇 {item.assigned_employee}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        所需工時：{item.required_hours} 小時
-                      </p>
-                      <p className="text-sm text-gray-600">排班時段：</p>
-                      <p className="text-sm text-gray-600">
-                        {item.assigned_slots.join(", ")}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))}
+              {choice.map((item, index) =>
+                item.required_hours === "無法判別地號" ? (
+                  <Link
+                    to={`/EmployeeClandar`}
+                    key={index}
+                    className="p-4 rounded-md border hover:bg-gray-100 cursor-pointer"
+                  >
+                    <p className="text-sm text-gray-600">
+                      案件地號：{inputs.localPoint}
+                    </p>
+                    <h4 className="text-lg font-bold mb-2">
+                      無法判別地號，請自行排班
+                    </h4>
+                  </Link>
+                ) : (
+                  <a
+                    key={index}
+                    href="#"
+                    className="block p-4 rounded-md border hover:bg-gray-100 cursor-pointer"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      console.log(convertToUTC(item.start_time));
+                      const foundEmployee = employees.find(
+                        (employee) => employee.name === item.assigned_employee
+                      );
+                      // 等待 autoSchedule 完成後再導航
+                      await autoSchedule(
+                        convertToUTC(item.start_time),
+                        convertToUTC(item.end_time),
+                        taskID,
+                        foundEmployee.employee_id,
+                        item.assigned_employee
+                      );
+                      console.log(`選擇 ${item.assigned_employee}`);
+                      setIsDialogOpen(false);
+                      navigate(
+                        `/EmployeeClandar?name=${encodeURIComponent(
+                          item.assigned_employee
+                        )}&taskID=${encodeURIComponent(taskID)}`
+                      );
+                    }}
+                  >
+                    <p className="text-sm text-gray-600">
+                      案件地號：{inputs.localPoint}
+                    </p>
+                    <h4 className="text-lg font-bold mb-2">
+                      選擇 {item.assigned_employee}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      所需工時：{item.required_hours} 小時
+                    </p>
+                    <p className="text-sm text-gray-600">排班時段：</p>
+                    <p className="text-sm text-gray-600">
+                      {item.assigned_slots.join(", ")}
+                    </p>
+                  </a>
+                )
+              )}
+
               {choice.length > 0 && (
                 <div className="p-4 rounded-md border hover:bg-gray-100">
                   <h4 className="text-lg font-bold mb-2">自行彈性排班</h4>
@@ -595,16 +604,14 @@ const HomePage = () => {
                       </option>
                     ))}
                   </select>
-                  <button
-                    onClick={() => {
-                      window.location.href = `/EmployeeClandar?name=${encodeURIComponent(
-                        selectedEmployeeFlex
-                      )}&taskID=${encodeURIComponent(taskID)}`;
-                    }}
-                    className="mt-2 text-white p-2 bg-gray-700 hover:bg-gray-800 w-full text-base"
+                  <Link
+                    to={`/EmployeeClandar?name=${encodeURIComponent(
+                      selectedEmployeeFlex
+                    )}&taskID=${encodeURIComponent(taskID)}`}
+                    className="mt-2 block text-white p-2 bg-gray-700 hover:bg-gray-800 w-full text-base text-center"
                   >
                     確認
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>

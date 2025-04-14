@@ -533,10 +533,14 @@ const EmployeeCalendarPage = () => {
   // 排班處理，保持原樣
   const handleSchedule = async () => {
     try {
+      const foundEmployee = employees.find(
+        (employee) => employee.name === selectedName
+      );
       await createSchedule(
         selectedSlot.start,
         selectedSlot.end,
         selectedTask,
+        foundEmployee.employee_id,
         selectedName
       );
       toast.success("排班成功");
@@ -676,10 +680,14 @@ const EmployeeCalendarPage = () => {
       return;
     }
     try {
+      const foundEmployee = employees.find(
+        (employee) => employee.name === selectedName
+      );
       await createSchedule(
         newScheduleStart,
         newScheduleEnd,
         selectedTask,
+        foundEmployee.employee_id,
         selectedName
       );
       toast.success("新增排班成功");

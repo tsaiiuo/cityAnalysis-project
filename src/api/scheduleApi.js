@@ -2,7 +2,7 @@ import axios from "axios";
 
 const BASE_URL = process.env.REACT_APP_BASE_URL;
 // 刪除 schedule 的 API
-export const deleteSchedule = async (event) => {
+{/*export const deleteSchedule = async (event) => {
   try {
     console.log({
       schedule_id: event.schedule_id,
@@ -27,7 +27,39 @@ export const deleteSchedule = async (event) => {
     console.error("Error deleting schedule:", error);
     alert("Failed to delete schedule. Please try again.");
   }
+};*/}
+export const deleteSchedule = async (event, showAlert = true) => {
+  try {
+    console.log({
+      schedule_id: event.schedule_id,
+      employee_id: event.employee_id,
+      start_time: event.start,
+      end_time: event.end,
+    });
+
+    const response = await axios.delete(`${BASE_URL}/schedule`, {
+      data: {
+        schedule_id: event.schedule_id,
+        employee_id: event.employee_id,
+        start_time: event.start,
+        end_time: event.end,
+      },
+    });
+
+    console.log(response.data);
+
+    if (showAlert) {
+      alert("Schedule deleted successfully!");
+    }
+  } catch (error) {
+    console.error("Error deleting schedule:", error);
+    if (showAlert) {
+      alert("Failed to delete schedule. Please try again.");
+    }
+    throw error; // 讓呼叫方可以知道有錯
+  }
 };
+
 
 // 新增 schedule 的 API
 export const createSchedule = async (

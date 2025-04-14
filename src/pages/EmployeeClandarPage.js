@@ -179,7 +179,87 @@ const EmployeeCalendarPage = () => {
       .sort((a, b) => a.start - b.start);
     setFilteredEvents(filtered);
   };
+  
   // 當使用者點擊「更新」按鈕時，傳回更新後的資料
+
+  {/*const handleUpdate = async () => {
+    const updatedData = {
+      stake_point: updatedStakePoint,
+      local_point: updatedLocalPoint,
+      work_area: updatedWorkArea,
+      check_time: updatedCheckTime,
+    };
+  
+    try {
+      // 1. 更新任務資料
+      await updateTask(selectedEvent.task_id, updatedData);
+      const tasks = await getTasks(false, office.office_id);
+      setTasks(tasks);
+      setSelectedEvent((prevEvent) => ({
+        ...prevEvent,
+        ...updatedData,
+      }));
+  
+      // 2. 如有新排班時間，先刪除再新增
+      if (newScheduleStart && newScheduleEnd) {
+        let deleteSuccess = false;
+        let createSuccess = false;
+  
+        // a. 嘗試刪除（先刪舊排班）
+        if (selectedEvent) {
+          try {
+            await deleteSchedule(selectedEvent); // 🔇 靜音
+            deleteSuccess = true;
+          } catch (err) {
+            toast.error("刪除舊排班失敗");
+          }
+        }
+  
+        // b. 刪除成功才嘗試新增
+        if (deleteSuccess) {
+          try {
+            await createSchedule(
+              newScheduleStart,
+              newScheduleEnd,
+              selectedTask,
+              selectedName
+            );
+            createSuccess = true;
+          } catch (err) {
+            toast.error("新增排班失敗");
+          }
+        }
+  
+        // c. 兩者都成功才算成功
+        {/*if (deleteSuccess && createSuccess) {
+          toast.success("排班更新成功");
+          setNewScheduleStart(null);
+          setNewScheduleEnd(null);
+        }
+        if (deleteSuccess && createSuccess) {
+          toast.success("排班更新成功");
+        
+          // ✅ 更新 selectedEvent 的 start / end 時間，讓下一次可以正確刪除
+          setSelectedEvent((prev) => ({
+            ...prev,
+            start: newScheduleStart,
+            end: newScheduleEnd,
+          }));
+        
+          setNewScheduleStart(null);
+          setNewScheduleEnd(null);
+        }
+      }
+  
+      // 3. 更新日曆
+      await refreshCalender();
+    } catch (err) {
+      toast.error(err?.response?.data?.error || "操作失敗，請稍後再試");
+    }
+  
+    setIsEditing(false);
+  };*/}
+  
   const handleUpdate = async () => {
     const updatedData = {
       stake_point: updatedStakePoint,
@@ -187,21 +267,79 @@ const EmployeeCalendarPage = () => {
       work_area: updatedWorkArea,
       check_time: updatedCheckTime,
     };
+  
     try {
+      // ✅ 先記下原本的排班時間
+      const prevSchedule = {
+        ...selectedEvent,
+        start: selectedEvent.start,
+        end: selectedEvent.end,
+      };
+  
+      // 1. 更新任務資料
       await updateTask(selectedEvent.task_id, updatedData);
       const tasks = await getTasks(false, office.office_id);
-      await refreshCalender();
-      setTasks(tasks); // 更新 tasks 狀態
+      setTasks(tasks);
       setSelectedEvent((prevEvent) => ({
         ...prevEvent,
         ...updatedData,
       }));
+  
+      // 2. 如有新排班時間，先刪除再新增
+      if (newScheduleStart && newScheduleEnd) {
+        let deleteSuccess = false;
+        let createSuccess = false;
+  
+        // a. 刪除舊排班 → 改成用 prevSchedule
+        try {
+          await deleteSchedule(prevSchedule, false); // 🔇 靜音
+          deleteSuccess = true;
+        } catch (err) {
+          toast.error("刪除舊排班失敗");
+        }
+  
+        // b. 刪除成功才新增
+        if (deleteSuccess) {
+          try {
+            await createSchedule(
+              newScheduleStart,
+              newScheduleEnd,
+              selectedTask,
+              selectedName
+            );
+            createSuccess = true;
+          } catch (err) {
+            toast.error("新增排班失敗");
+          }
+        }
+  
+        // c. 兩者成功才視為更新成功
+        if (deleteSuccess && createSuccess) {
+          toast.success("排班更新成功");
+  
+          // 更新畫面狀態
+          setSelectedEvent((prev) => ({
+            ...prev,
+            start: newScheduleStart,
+            end: newScheduleEnd,
+          }));
+  
+          setNewScheduleStart(null);
+          setNewScheduleEnd(null);
+        }
+      }
+  
+      // 3. 更新日曆
+      await refreshCalender();
     } catch (err) {
-      toast.error(err.response.data.error);
+      toast.error(err?.response?.data?.error || "操作失敗，請稍後再試");
     }
-
+  
     setIsEditing(false);
   };
+  
+  
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -874,6 +1012,39 @@ ${formatDateToTaiwanTime(selectedEvent.check_time)}`}
                       className="border p-2 w-full"
                     />
                   </div>
+                {/*嘗試 */}
+                <div className="flex flex-col mt-2">
+                <label className="block text-sm font-bold">時間變更</label>
+                <div className="flex justify-around space-x-2">
+                  <div>
+                    <DatePicker
+                      selected={newScheduleStart}
+                      onChange={(date) => setNewScheduleStart(date)}
+                      showTimeSelect
+                      dateFormat="Pp"
+                      className="border p-2 w-full"
+                      placeholderText="排班開始時間"
+                    />
+                  </div>
+                  <div>
+                    <DatePicker
+                      selected={newScheduleEnd}
+                      onChange={(date) => setNewScheduleEnd(date)}
+                      showTimeSelect
+                      dateFormat="Pp"
+                      className="border p-2 w-full"
+                      placeholderText="排班結束時間"
+                    />
+                  </div>
+                </div>
+                {/*<button
+                  onClick={handleAddSchedule}
+                  className="mt-2 bg-blue-500 text-white px-3 py-2 rounded-md"
+                >
+                  送出新增排班
+                </button>*/}
+              </div>
+                {/*嘗試 */}
                   <div className="flex justify-end space-x-2">
                     <button
                       onClick={handleUpdate}
@@ -891,11 +1062,11 @@ ${formatDateToTaiwanTime(selectedEvent.check_time)}`}
                 </div>
               )}
 
-              <p className="mb-4">
+             {/* <p className="mb-4">
                 請選擇要對任務編號 {selectedEvent.task_id} 進行的操作
-              </p>
+              </p>*/}
 
-              <div className="flex flex-col mt-2">
+              {/*<div className="flex flex-col mt-2">
                 <div className="flex justify-around space-x-2">
                   <div>
                     <DatePicker
@@ -924,7 +1095,7 @@ ${formatDateToTaiwanTime(selectedEvent.check_time)}`}
                 >
                   送出新增排班
                 </button>
-              </div>
+              </div>*/}
               <div className="flex justify-start space-x-2 mt-1">
                 <button
                   onClick={handleCompleteEvent}

@@ -9,9 +9,9 @@ import { postAssignSchedule, autoSchedule } from "../api/scheduleApi";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { OfficeContext } from "../officeContext";
+import { getLandSections } from "../api/landsectionApi";
 
-// 根據 office 回傳對應的地段號選項
-const getLandSectionOptions = (office) => {
+/*const getLandSectionOptions = (office) => {
   const mapping = {
     鹽水地政事務所: [
       { name: "橋南段", value: "2039" },
@@ -177,7 +177,7 @@ const getLandSectionOptions = (office) => {
     // 其他事務所可以依需求加入...
   };
   return mapping[office] || mapping["鹽水地政事務所"];
-};
+};*/
 
 const HomePage = () => {
   const location = useLocation();
@@ -202,6 +202,7 @@ const HomePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [selectedEmployeeFlex, setSelectedEmployeeFlex] = useState("");
+  const [landSections, setLandSections] = useState([]); // 儲存地段資料
 
   // 新增：地段號自動完成相關 state
   const [landSectionQuery, setLandSectionQuery] = useState("");
@@ -249,6 +250,23 @@ const HomePage = () => {
     }
     console.log(office);
   }, []);
+
+  //抓取地段號
+  useEffect(() => {
+    const fetchLandSections = async () => {
+      try {
+        const sections = await getLandSections(office.office_id);
+        console.log("Fetched land sections:", sections);  // 打印資料查看格式
+        setLandSections(sections);
+      } catch (error) {
+        console.error("Error fetching land sections", error);
+      }
+    };
+  
+    if (office?.office_id) {
+      fetchLandSections();
+    }
+  }, [office]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -320,14 +338,23 @@ const HomePage = () => {
     setInputs((prev) => ({ ...prev, landSection: "" }));
   }, [inputs.office]);
 
-  // 使用當前 office 選取對應的地段號選項
+  /*// 使用當前 office 選取對應的地段號選項
   const currentLandSectionOptions = getLandSectionOptions(inputs.office);
   // 過濾符合查詢的選項
   const filteredSuggestions = currentLandSectionOptions.filter(
     (option) =>
       option.name.includes(landSectionQuery) ||
       option.value.includes(landSectionQuery)
-  );
+  );*/
+  
+  const filteredSuggestions = landSections && landSections.land_sections
+  ? landSections.land_sections.filter(
+      (section) =>
+        section.name.includes(landSectionQuery) ||
+        section.number.includes(landSectionQuery)
+    )
+  : []; // 如果 landSections 或 landSections.land_sections 不存在，返回空陣列
+  
 
   // 使用 ref 監聽點擊外部事件，關閉建議清單
   const landSectionRef = useRef(null);
@@ -386,20 +413,21 @@ const HomePage = () => {
             />
             {showSuggestions && filteredSuggestions.length > 0 && (
               <ul className="absolute z-10 left-0 right-0 bg-white border rounded-md mt-1 h-screen overflow-y-auto">
-                {filteredSuggestions.map((option, index) => (
+                {filteredSuggestions.map((section, index) => (
                   <li
-                    key={index}
+                    key={section.name || index}
                     className="p-2 hover:bg-gray-200 cursor-pointer"
                     onClick={() => {
-                      setLandSectionQuery(option.value);
+                      const selectedValue = `${section.name}（${section.number}）`;
+                      setLandSectionQuery(selectedValue);
                       setInputs((prev) => ({
                         ...prev,
-                        landSection: option.value,
+                        landSection: section.number,
                       }));
                       setShowSuggestions(false);
                     }}
                   >
-                    {option.name}: {option.value}
+                    {section.name}（{section.number}）
                   </li>
                 ))}
               </ul>

@@ -540,7 +540,6 @@ const EmployeeCalendarPage = () => {
         selectedSlot.start,
         selectedSlot.end,
         selectedTask,
-        foundEmployee.employee_id,
         selectedName
       );
       toast.success("排班成功");
@@ -687,7 +686,6 @@ const EmployeeCalendarPage = () => {
         newScheduleStart,
         newScheduleEnd,
         selectedTask,
-        foundEmployee.employee_id,
         selectedName
       );
       toast.success("新增排班成功");

@@ -582,7 +582,6 @@ const HomePage = () => {
                         convertToUTC(item.start_time),
                         convertToUTC(item.end_time),
                         taskID,
-                        foundEmployee.employee_id,
                         item.assigned_employee
                       );
                       console.log(`選擇 ${item.assigned_employee}`);
